@@ -232,5 +232,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
   <p>Built with ❤️ for the AI community</p>
-  <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href="https://caomengxuan666/MCPServer.cpp">Documentation</a> | <a href="https://github.com/caoe/MCPServer.cpp/issues">Issues</a></p>
+  <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href=https://github.com/caomengxuan666/MCPServer.cpp/issues>Issues</a></p>
 </div>

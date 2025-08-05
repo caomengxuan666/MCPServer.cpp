@@ -232,5 +232,5 @@ MCPServer.cpp 支持强大的插件系统，允许在不修改核心服务器的
 
 <div align="center">
   <p>为 AI 社区 ❤️ 而构建</p>
-  <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href="https://caomengxuan666.github.io/MCPServer.cpp">文档</a> | <a href="https://github.com/caomengxuan666/MCPServer.cpp/issues">问题</a></p>
+  <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href="https://github.com/caomengxuan666/MCPServer.cpp/issues">问题</a></p>
 </div>
