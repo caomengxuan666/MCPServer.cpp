@@ -97,7 +97,7 @@ namespace mcp::core {
     }
 
     void MCPserver::start() {
-        MCP_INFO("MCPserver++ is ready. Send JSON-RPC messages via stdin.");
+        MCP_INFO("MCPServer.cpp is ready. Send JSON-RPC messages via stdin.");
         while (true) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }

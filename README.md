@@ -1,11 +1,11 @@
 <div align="center">
-  <img src="docs/logo.png" alt="MCPserver++ Logo" width="200"/>
-  <h1>MCPserver++</h1>
+  <img src="docs/logo.png" alt="MCPServer.cpp Logo" width="200"/>
+  <h1>MCPServer.cpp</h1>
   <p>A high-performance C++ implementation of the Model Communication Protocol server</p>
 
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
-[![License](https://img.shields.io/github/license/caomengxuan666/MCPServer++)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/caomengxuan666/MCPServer++/build.yml)](https://github.com/caomengxuan666/MCPServer++/actions)
+[![License](https://img.shields.io/github/license/caomengxuan666/MCPServer.cpp)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/caomengxuan666/MCPServer.cpp/build.yml)](https://github.com/caomengxuan666/MCPServer.cpp/actions)
 </div>
 
 ## Language Versions
@@ -28,7 +28,7 @@
 
 ## Introduction
 
-MCPserver++ is a high-performance, cross-platform server implementation of the Model Communication Protocol (MCP) written in modern C++. It enables seamless communication between AI models and external tools, providing a standardized interface for extending model capabilities.
+MCPServer.cpp is a high-performance, cross-platform server implementation of the Model Communication Protocol (MCP) written in modern C++. It enables seamless communication between AI models and external tools, providing a standardized interface for extending model capabilities.
 
 The server implements the JSON-RPC 2.0 protocol over HTTP transport and supports both regular request-response and Server-Sent Events (SSE) streaming for real-time communication.
 
@@ -47,11 +47,11 @@ The server implements the JSON-RPC 2.0 protocol over HTTP transport and supports
 
 ## Architecture
 
-MCPserver++ follows a modular architecture with clearly separated components:
+MCPServer.cpp follows a modular architecture with clearly separated components:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      MCPserver++                            │
+│                      MCPServer.cpp                            │
 ├─────────────────────────────────────────────────────────────┤
 │                   Transport Layer                           │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
@@ -94,8 +94,8 @@ MCPserver++ follows a modular architecture with clearly separated components:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/caomengxuan666/MCPServer++.git
-   cd MCPServer++
+   git clone https://github.com/caomengxuan666/MCPServer.cpp.git
+   cd MCPServer.cpp
    ```
 
 2. Build the project:
@@ -159,7 +159,7 @@ auto server = mcp::core::MCPserver::Builder{}
 
 ## Plugins
 
-MCPserver++ supports a powerful plugin system that allows extending functionality without modifying the core server. Plugins are dynamic libraries that implement the MCP plugin interface.
+MCPServer.cpp supports a powerful plugin system that allows extending functionality without modifying the core server. Plugins are dynamic libraries that implement the MCP plugin interface.
 
 ### Official Plugins
 
@@ -232,5 +232,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
   <p>Built with ❤️ for the AI community</p>
-  <p><a href="https://github.com/caomengxuan666/MCPserver++">GitHub</a> | <a href="https://caomengxuan666/MCPserver++">Documentation</a> | <a href="https://github.com/caoe/MCPServer++/issues">Issues</a></p>
+  <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href="https://caomengxuan666/MCPServer.cpp">Documentation</a> | <a href="https://github.com/caoe/MCPServer.cpp/issues">Issues</a></p>
 </div>

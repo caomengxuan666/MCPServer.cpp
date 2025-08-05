@@ -10,7 +10,7 @@ int main() {
         // 1. init the logger
         mcp::core::initializeAsyncLogger("mcp-server.log", "trace");
         mcp::core::MCPLogger::instance()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-        MCP_INFO("MCPserver++ started");
+        MCP_INFO("MCPServer.cpp started");
 
         // 2. construct and build our server
         auto server = mcp::core::MCPserver::Builder{}
@@ -21,7 +21,7 @@ int main() {
                               .with_plugin("example_stream_plugin.dll")
                               .build();
 
-        MCP_INFO("MCPserver++ is ready. Send JSON-RPC messages via /mcp.");
+        MCP_INFO("MCPServer.cpp is ready. Send JSON-RPC messages via /mcp.");
 
         server->run();
 

@@ -1,11 +1,11 @@
 <div align="center">
-  <img src="docs/logo.png" alt="MCPserver++ Logo" width="200"/>
-  <h1>MCPserver++</h1>
+  <img src="docs/logo.png" alt="MCPServer.cpp Logo" width="200"/>
+  <h1>MCPServer.cpp</h1>
   <p>高性能的 C++ 实现模型通信协议服务器</p>
 
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
-[![License](https://img.shields.io/github/license/caomengxuan666/MCPServer++)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/caomengxuan666/MCPServer++/build.yml)](https://github.com/caomengxuan666/MCPServer++/actions)
+[![License](https://img.shields.io/github/license/caomengxuan666/MCPServer.cpp)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/caomengxuan666/MCPServer.cpp/build.yml)](https://github.com/caomengxuan666/MCPServer.cpp/actions)
 </div>
 
 ## 语言版本
@@ -28,7 +28,7 @@
 
 ## 简介
 
-MCPserver++ 是一个使用现代 C++ 编写的高性能、跨平台的模型通信协议（MCP）服务器实现。它能够实现 AI 模型与外部工具之间的无缝通信，为扩展模型功能提供标准化接口。
+MCPServer.cpp 是一个使用现代 C++ 编写的高性能、跨平台的模型通信协议（MCP）服务器实现。它能够实现 AI 模型与外部工具之间的无缝通信，为扩展模型功能提供标准化接口。
 
 该服务器通过 HTTP 传输实现了 JSON-RPC 2.0 协议，并支持常规请求-响应和服务器发送事件（SSE）流式传输，以实现实时通信。
 
@@ -47,11 +47,11 @@ MCPserver++ 是一个使用现代 C++ 编写的高性能、跨平台的模型通
 
 ## 架构
 
-MCPserver++ 采用模块化架构，各组件之间界限清晰：
+MCPServer.cpp 采用模块化架构，各组件之间界限清晰：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      MCPserver++                            │
+│                      MCPServer.cpp                            │
 ├─────────────────────────────────────────────────────────────┤
 │                    传输层 (Transport Layer)                  │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
@@ -94,8 +94,8 @@ MCPserver++ 采用模块化架构，各组件之间界限清晰：
 
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/caomengxuan666/MCPServer++.git
-   cd MCPServer++
+   git clone https://github.com/caomengxuan666/MCPServer.cpp.git
+   cd MCPServer.cpp
    ```
 
 2. 构建项目：
@@ -159,7 +159,7 @@ auto server = mcp::core::MCPserver::Builder{}
 
 ## 插件
 
-MCPserver++ 支持强大的插件系统，允许在不修改核心服务器的情况下扩展功能。插件是实现 MCP 插件接口的动态库。
+MCPServer.cpp 支持强大的插件系统，允许在不修改核心服务器的情况下扩展功能。插件是实现 MCP 插件接口的动态库。
 
 ### 官方插件
 
@@ -232,5 +232,5 @@ MCPserver++ 支持强大的插件系统，允许在不修改核心服务器的�
 
 <div align="center">
   <p>为 AI 社区 ❤️ 而构建</p>
-  <p><a href="https://github.com/caomengxuan666/MCPServer++">GitHub</a> | <a href="https://caomengxuan666.github.io/MCPServer++">文档</a> | <a href="https://github.com/caomengxuan666/MCPServer++/issues">问题</a></p>
+  <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href="https://caomengxuan666.github.io/MCPServer.cpp">文档</a> | <a href="https://github.com/caomengxuan666/MCPServer.cpp/issues">问题</a></p>
 </div>

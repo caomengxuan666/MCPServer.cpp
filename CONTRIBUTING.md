@@ -1,6 +1,6 @@
-# Contributing to MCPServer++
+# Contributing to MCPServer.cpp
 
-Thank you for your interest in contributing to MCPServer++! This document provides guidelines to help you contribute effectively.
+Thank you for your interest in contributing to MCPServer.cpp! This document provides guidelines to help you contribute effectively.
 
 ## Code Style and Documentation
 
