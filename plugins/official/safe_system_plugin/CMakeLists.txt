@@ -1,0 +1,1 @@
+configure_plugin(safe_system_plugin safe_system_plugin.cpp)

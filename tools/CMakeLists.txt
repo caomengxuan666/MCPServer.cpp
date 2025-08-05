@@ -1,0 +1,1 @@
+add_executable(plugin_ctl plugin_ctl.cpp)

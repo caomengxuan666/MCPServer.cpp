@@ -1,0 +1,9 @@
+/.cache
+/build
+/logs
+.vscode
+out/
+cmake-build-debug/
+cmake-build-release/
+/.idea
+mcp-server.log

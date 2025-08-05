@@ -1,0 +1,236 @@
+<div align="center">
+  <img src="docs/logo.png" alt="MCPserver++ Logo" width="200"/>
+  <h1>MCPserver++</h1>
+  <p>高性能的 C++ 实现模型通信协议服务器</p>
+
+[![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+[![License](https://img.shields.io/github/license/caomengxuan666/MCPServer++)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/caomengxuan666/MCPServer++/build.yml)](https://github.com/caomengxuan666/MCPServer++/actions)
+</div>
+
+## 语言版本
+
+- [English (默认)](README.md)
+- [中文版](README_zh.md)
+
+## 目录
+
+- [简介](#简介)
+- [特性](#特性)
+- [架构](#架构)
+- [快速开始](#快速开始)
+- [从源码构建](#从源码构建)
+- [配置](#配置)
+- [插件](#插件)
+- [API 参考](#api-参考)
+- [贡献](#贡献)
+- [许可证](#许可证)
+
+## 简介
+
+MCPserver++ 是一个使用现代 C++ 编写的高性能、跨平台的模型通信协议（MCP）服务器实现。它能够实现 AI 模型与外部工具之间的无缝通信，为扩展模型功能提供标准化接口。
+
+该服务器通过 HTTP 传输实现了 JSON-RPC 2.0 协议，并支持常规请求-响应和服务器发送事件（SSE）流式传输，以实现实时通信。
+
+## 特性
+
+- 🚀 **高性能**: 使用 C++20 构建，并通过 mimalloc 优化性能
+- 🔌 **插件系统**: 可扩展的架构，支持动态插件加载
+- 🌐 **HTTP 传输**: 完整的 HTTP/1.1 支持，具备 SSE 流式传输能力
+- 📦 **JSON-RPC 2.0**: 完整实现了 JSON-RPC 2.0 规范
+- 🛠️ **内置工具**: 包含文件操作、HTTP 请求和系统命令
+- 🧠 **AI 模型就绪**: 专为 AI 模型集成而设计
+- 🔄 **异步 I/O**: 基于 ASIO 实现高效的并发处理
+- 📊 **日志**: 使用 spdlog 实现全面的日志记录
+- 📈 **可扩展**: 多线程架构，可处理并发请求
+- 🌍 **跨平台**: 支持 Windows、Linux 和 macOS
+
+## 架构
+
+MCPserver++ 采用模块化架构，各组件之间界限清晰：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      MCPserver++                            │
+├─────────────────────────────────────────────────────────────┤
+│                    传输层 (Transport Layer)                  │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ HTTP 服务器 │  │  标准I/O    │  │   其他协议          │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+├─────────────────────────────────────────────────────────────┤
+│                    协议层 (Protocol Layer)                   │
+│              ┌──────────────────────┐                       │
+│              │    JSON-RPC 2.0      │                       │
+│              └──────────────────────┘                       │
+├─────────────────────────────────────────────────────────────┤
+│                  业务逻辑层 (Business Logic Layer)           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ 工具注册表  │  │   插件      │  │  请求处理           │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+├─────────────────────────────────────────────────────────────┤
+│                      核心服务 (Core Services)               │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   日志系统  │  │   内存管理  │  │  对象池             │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 核心组件
+
+1. **传输层**: 处理各种协议的通信（HTTP、stdio 等）
+2. **协议层**: 实现 JSON-RPC 2.0 消息解析和格式化
+3. **业务逻辑层**: 管理工具、插件和请求处理
+4. **核心服务**: 提供日志、内存管理和对象池等基本服务
+
+## 快速开始
+
+### 环境要求
+
+- C++20 兼容编译器 (MSVC, GCC 10+, Clang 12+)
+- CMake 3.23 或更高版本
+- Git
+
+### 快速开始指南
+
+1. 克隆仓库：
+   ```bash
+   git clone https://github.com/caomengxuan666/MCPServer++.git
+   cd MCPServer++
+   ```
+
+2. 构建项目：
+   ```bash
+   mkdir build
+   cd build
+   cmake ..
+   cmake --build .
+   ```
+
+3. 运行服务器：
+   ```bash
+   ./bin/mcp-server++
+   ```
+
+服务器将在默认端口启动并加载内置插件。
+
+## 从源码构建
+
+### Windows
+
+```bash
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release
+```
+
+### Linux/macOS
+
+```bash
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
+```
+
+### 构建选项
+
+| 选项 | 描述 | 默认值 |
+|------|------|--------|
+| `BUILD_TESTS` | 构建单元测试 | ON |
+| `CMAKE_BUILD_TYPE` | 构建类型 (Debug, Release, 等) | Release |
+
+## 配置
+
+可以通过 [main.cpp](src/main.cpp) 文件配置服务器。主要配置选项包括：
+
+- 插件加载
+- 内置工具注册
+- 传输设置
+
+配置示例：
+```cpp
+auto server = mcp::core::MCPserver::Builder{}
+                      .with_builtin_tools()
+                      .with_plugin("file_plugin.dll")
+                      .with_plugin("http_plugin.dll")
+                      .build();
+```
+
+## 插件
+
+MCPserver++ 支持强大的插件系统，允许在不修改核心服务器的情况下扩展功能。插件是实现 MCP 插件接口的动态库。
+
+### 官方插件
+
+- `file_plugin`: 文件系统操作
+- `http_plugin`: HTTP 客户端功能
+- `safe_system_plugin`: 安全系统命令执行
+- `example_stream_plugin`: 流式数据示例
+
+### 插件开发
+
+有关开发自定义插件的详细信息，请参阅 [plugins/README_zh.md](plugins/README_zh.md)。
+
+## API 参考
+
+服务器通过 HTTP 实现了 JSON-RPC 2.0 协议。所有请求应发送到 `/mcp` 端点。
+
+### 请求示例
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools",
+  "params": {}
+}
+```
+
+### 响应示例
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": [
+    {
+      "name": "read_file",
+      "description": "读取文件",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "要读取的文件路径"
+          }
+        },
+        "required": ["path"]
+      }
+    }
+  ]
+}
+```
+
+## 贡献
+
+我们欢迎社区的贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解如何为该项目做出贡献的指南。
+
+### 开发设置
+
+1. Fork 仓库
+2. 创建功能分支
+3. 进行修改
+4. 如适用，添加测试
+5. 提交拉取请求
+
+## 许可证
+
+该项目基于 MIT 许可证 - 详情请见 [LICENSE](LICENSE) 文件。
+
+---
+
+<div align="center">
+  <p>为 AI 社区 ❤️ 而构建</p>
+  <p><a href="https://github.com/caomengxuan666/MCPServer++">GitHub</a> | <a href="https://caomengxuan666.github.io/MCPServer++">文档</a> | <a href="https://github.com/caomengxuan666/MCPServer++/issues">问题</a></p>
+</div>

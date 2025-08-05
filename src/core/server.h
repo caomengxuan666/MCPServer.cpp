@@ -1,0 +1,57 @@
+// src/core/server.h
+#pragma once
+#if defined(_WIN32) && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0601
+#endif
+
+#include "business/plugin_manager.h"
+#include "business/tool_registry.h"
+#include "mcp_dispatcher.h"
+#include "transport/http_transport.h"
+#include <asio/io_context.hpp>
+#include <memory>
+#include <vector>
+
+
+namespace mcp::core {
+
+    class MCPserver {
+    public:
+        class Builder;
+
+        void start();
+        bool start_http_transport(uint16_t port, const std::string &address);
+        void run();
+
+        McpDispatcher &get_dispatcher() { return *dispatcher_; }
+        asio::io_context &get_io_context();
+
+    private:
+        MCPserver() = default;
+        friend class Builder;
+
+        std::shared_ptr<business::ToolRegistry> registry_;
+        std::shared_ptr<business::PluginManager> plugin_manager_;
+        std::unique_ptr<McpDispatcher> dispatcher_;
+        std::unique_ptr<mcp::transport::HttpTransport> http_transport_;
+
+        // Used to record configuration
+        bool should_register_echo_tool_ = false;
+        std::vector<std::string> plugin_paths_;
+
+        asio::io_context io_context_;
+    };
+
+    class MCPserver::Builder {
+    public:
+        Builder();
+        Builder &with_builtin_tools();
+        Builder &with_echo_tool();
+        Builder &with_plugin(const std::string &path);
+        std::unique_ptr<MCPserver> build();
+
+    private:
+        std::unique_ptr<MCPserver> server_ = nullptr;
+    };
+
+}// namespace mcp::core
