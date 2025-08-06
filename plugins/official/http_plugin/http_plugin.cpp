@@ -1,10 +1,11 @@
 // plugins/official/http_plugin/http_plugin.cpp
-#include "../../sdk/mcp_plugin.h"
 #include "core/mcpserver_api.h"
 #include "httplib.h"// Include httplib
+#include "mcp_plugin.h"
 #include "tool_info_parser.h"
 #include <cstdlib>
 #include <nlohmann/json.hpp>
+
 
 
 static std::vector<ToolInfo> g_tools;
@@ -70,23 +71,23 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
         if (tool_name == "http_get") {
             std::string url = args.value("url", "");
             if (url.empty()) {
-                return _strdup(R"({"error": "Missing 'url' parameter"})");
+                return strdup(R"({"error": "Missing 'url' parameter"})");
             }
             std::string result = http_get(url);
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "http_post") {
             std::string url = args.value("url", "");
             std::string body = args.value("body", "");
             if (url.empty()) {
-                return _strdup(R"({"error": "Missing 'url' parameter"})");
+                return strdup(R"({"error": "Missing 'url' parameter"})");
             }
             std::string result = http_post(url, body);
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else {
-            return _strdup(R"({"error": "Unknown tool"})");
+            return strdup(R"({"error": "Unknown tool"})");
         }
     } catch (const std::exception &e) {
-        return _strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
+        return strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
     }
 }
 

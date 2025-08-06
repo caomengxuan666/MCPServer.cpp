@@ -41,14 +41,14 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
         if (tool_name == "read_file") {
             std::string path = args.value("path", "");
             if (path.empty()) {
-                return _strdup(R"({"error": "Missing 'path' parameter"})");
+                return strdup(R"({"error": "Missing 'path' parameter"})");
             }
             std::string result = read_file(path);
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         }
-        return _strdup(R"({"error": "Unknown tool"})");
+        return strdup(R"({"error": "Unknown tool"})");
     } catch (const std::exception &e) {
-        return _strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
+        return strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
     }
 }
 

@@ -44,6 +44,7 @@ namespace mcp::business {
         ~PluginManager();
 
         bool load_plugin(const std::string &path);
+        void load_plugins_from_directory(const std::string& directory);
 
         // get tools from a specific plugin
         std::vector<ToolInfo> get_tools_from_plugin(const std::string &plugin_path) const;
@@ -67,7 +68,7 @@ namespace mcp::business {
         std::unordered_map<std::string, std::unique_ptr<Plugin>> plugins_;// name -> Plugin mapping
         std::vector<std::string> load_order_;                             // to keep track of load order
         Plugin *current_plugin_ = nullptr;
-        mutable std::mutex generator_mutex_;// 线程安全
+        mutable std::mutex generator_mutex_;// thread safety
         std::unordered_map<StreamGenerator, Plugin *> generator_to_plugin_;
     };
 

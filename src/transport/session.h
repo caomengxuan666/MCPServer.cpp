@@ -1,6 +1,6 @@
 #pragma once
 
-// 确保 ASIO 在 Windows 上正确配置 WinSock
+
 #if defined(_WIN32) && !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x0601
 #endif
@@ -9,7 +9,7 @@
 #include <asio.hpp>
 #include <memory>
 
-// 前置声明（解决与 HttpHandler 的循环依赖）
+
 namespace mcp::transport {
     class HttpHandler;
 }

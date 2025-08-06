@@ -1,6 +1,5 @@
 // src/protocol/json_rpc.cpp
 #include "json_rpc.h"
-#include "core/logger.h"
 #include <cstdio>
 
 

@@ -198,38 +198,38 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
 
         if (tool_name == "get_current_time") {
             std::string result = get_current_time();
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "get_system_info") {
             std::string result = get_system_info();
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "list_files") {
             std::string path = args.value("path", "");
             if (path.empty()) {
-                return _strdup(R"({"error": "Missing 'path' parameter"})");
+                return strdup(R"({"error": "Missing 'path' parameter"})");
             }
             std::string result = list_files(path);
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "ping_host") {
             std::string host = args.value("host", "");
             if (host.empty()) {
-                return _strdup(R"({"error": "Missing 'host' parameter"})");
+                return strdup(R"({"error": "Missing 'host' parameter"})");
             }
             std::string result = ping_host(host);
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "check_connectivity") {
             std::string result = check_connectivity();
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "get_public_ip") {
             std::string result = get_public_ip();
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "stream_log_file") {
             std::string path = args.value("path", "");
             if (path.empty()) {
-                return _strdup(R"({"error": "Missing 'path' parameter"})");
+                return strdup(R"({"error": "Missing 'path' parameter"})");
             }
 
             if (!std::filesystem::exists(path)) {
-                return _strdup(R"({"error": "File not found"})");
+                return strdup(R"({"error": "File not found"})");
             }
 
             LogFileGenerator *gen = new LogFileGenerator();
@@ -240,10 +240,10 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
             }
             return reinterpret_cast<const char *>(gen);
         } else {
-            return _strdup(R"({"error": "Unknown tool"})");
+            return strdup(R"({"error": "Unknown tool"})");
         }
     } catch (const std::exception &e) {
-        return _strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
+        return strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
     }
 }
 

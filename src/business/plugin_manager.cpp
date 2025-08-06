@@ -18,7 +18,7 @@ namespace mcp::business {
     bool PluginManager::load_plugin(const std::string &path) {
         std::filesystem::path plugin_path = std::filesystem::absolute(path);
         std::string plugin_file_path = plugin_path.string();
-        MCP_INFO("Loading plugin from: {}", plugin_file_path);
+        MCP_TRACE("Loading plugin from: {}", plugin_file_path);
 
         if (!std::filesystem::exists(plugin_file_path)) {
             MCP_ERROR("Plugin file not found: {}", plugin_file_path);
@@ -70,16 +70,60 @@ namespace mcp::business {
         plugin->get_stream_free = get_stream_free_loader;
         for (int i = 0; i < tool_count; ++i) {
             plugin->tool_list.push_back(tool_infos[i]);
-            MCP_INFO("Loaded tool: '{}' from plugin", tool_infos[i].name);
+            MCP_DEBUG("Loaded tool: '{}' from plugin", tool_infos[i].name);
         }
 
 
         plugins_[plugin_name] = std::move(plugin);
         load_order_.push_back(plugin_name);
-        MCP_INFO("Plugin loaded successfully: {} (total plugins: {})", plugin_name, plugins_.size());
+        MCP_DEBUG("Plugin loaded successfully: {} (total plugins: {})", plugin_name, plugins_.size());
 
         return true;
     }
+
+
+    void PluginManager::load_plugins_from_directory(const std::string &directory) {
+        // Handle empty directory path - use current directory
+        std::filesystem::path dir_path;
+        if (directory.empty()) {
+            dir_path = std::filesystem::current_path();
+            MCP_INFO("Empty directory path provided, using current directory: {}", dir_path.string());
+        } else {
+            dir_path = std::filesystem::path(directory);
+        }
+
+        if (!std::filesystem::exists(dir_path)) {
+            MCP_WARN("Plugin directory does not exist: {}", dir_path.string());
+            return;
+        }
+
+        if (!std::filesystem::is_directory(dir_path)) {
+            MCP_WARN("Path is not a directory: {}", dir_path.string());
+            return;
+        }
+
+        MCP_INFO("Scanning plugin directory: {}", dir_path.string());
+
+        // foreach file in directory
+        for (const auto &entry: std::filesystem::directory_iterator(dir_path)) {
+            if (entry.is_regular_file()) {
+                std::string filename = entry.path().filename().string();
+
+                // cross platform
+#ifdef _WIN32
+                if (entry.path().extension() == ".dll") {
+#elif __APPLE__
+                if (entry.path().extension() == ".dylib") {
+#else
+                if (entry.path().extension() == ".so") {
+#endif
+                    MCP_TRACE("Found plugin file: {}", filename);
+                    load_plugin(entry.path().string());
+                }
+            }
+        }
+    }
+
 
     std::vector<ToolInfo> PluginManager::get_tools_from_plugin(const std::string &plugin_path) const {
         std::string plugin_name = std::filesystem::path(plugin_path).filename().string();

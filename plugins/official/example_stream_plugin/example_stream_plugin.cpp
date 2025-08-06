@@ -1,5 +1,5 @@
-#include "../../sdk/mcp_plugin.h"
 #include "core/mcpserver_api.h"
+#include "mcp_plugin.h"
 #include <atomic>
 #include <chrono>
 #include <ctime>
@@ -79,10 +79,10 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
             gen->last_send_time = std::chrono::steady_clock::now();
             return reinterpret_cast<const char *>(gen);
         } else {
-            return _strdup(R"({"error": "Unknown tool: example_stream"})");
+            return strdup(R"({"error": "Unknown tool: example_stream"})");
         }
     } catch (const std::exception &e) {
-        return _strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
+        return strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
     }
 }
 

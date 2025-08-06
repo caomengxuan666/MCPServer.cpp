@@ -1,5 +1,8 @@
 add_compile_options(/utf-8)
 
+# Define the plugins output directory
+set(PLUGINS_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
+
 # Common function to configure a plugin
 # args:
 #   plugin_name
@@ -47,13 +50,20 @@ function(configure_plugin plugin_name src_files)
         target_link_libraries(${plugin_name} ${extra_libs})
     endif()
     
-    set_target_properties(${plugin_name} PROPERTIES PREFIX "")
+    # Set output directory for plugins to bin/plugins
+    set_target_properties(${plugin_name} PROPERTIES 
+        PREFIX ""
+        RUNTIME_OUTPUT_DIRECTORY ${PLUGINS_OUTPUT_DIR}
+        LIBRARY_OUTPUT_DIRECTORY ${PLUGINS_OUTPUT_DIR}
+    )
+    
     if(WIN32)
         set_target_properties(${plugin_name} PROPERTIES SUFFIX ".dll")
     endif()
+    
     install(TARGETS ${plugin_name}
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin/plugins
+        LIBRARY DESTINATION lib/plugins
     )
     
     # automatically generate tools.json
@@ -63,29 +73,29 @@ function(configure_plugin plugin_name src_files)
     if(EXISTS ${json_source_file})
         configure_file(
             ${json_source_file}
-            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${json_target_file}
+            ${PLUGINS_OUTPUT_DIR}/${json_target_file}
             COPYONLY
         )
     
         # build when the plugin is built
         add_custom_command(
-            OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${json_target_file}
+            OUTPUT ${PLUGINS_OUTPUT_DIR}/${json_target_file}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${json_source_file}
-            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${json_target_file}
+            ${PLUGINS_OUTPUT_DIR}/${json_target_file}
             DEPENDS ${json_source_file}
             COMMENT "Copying ${plugin_name} tools.json file"
         )
         
         add_custom_target(${plugin_name}_json ALL
-            DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${json_target_file}
+            DEPENDS ${PLUGINS_OUTPUT_DIR}/${json_target_file}
         )
         
         add_dependencies(${plugin_name} ${plugin_name}_json)
         
         
         install(FILES ${json_source_file}
-            DESTINATION bin
+            DESTINATION bin/plugins
             RENAME ${json_target_file}
         )
     endif()

@@ -16,13 +16,29 @@ namespace mcp::core {
         return with_echo_tool();
     }
 
+    MCPserver::Builder &MCPserver::Builder::with_plugin_path(const std::string &path) {
+        // Store the plugin directory path for later loading
+        server_->plugin_directories_.push_back(path);
+        return *this;
+    }
+
     MCPserver::Builder &MCPserver::Builder::with_echo_tool() {
         server_->should_register_echo_tool_ = true;
         return *this;
     }
 
     MCPserver::Builder &MCPserver::Builder::with_plugin(const std::string &path) {
-        server_->plugin_paths_.push_back(path);
+        std::string plugin_path;
+#ifdef _WIN32
+        plugin_path = path + ".dll";
+#elif defined(__APPLE__)
+        plugin_path = path + ".dylib";
+#elif defined(_POSIX)
+        plugin_path = path + ".so";
+#else
+        plugin_path = path;
+#endif
+        server_->plugin_paths_.push_back(plugin_path);
         return *this;
     }
 
@@ -45,6 +61,34 @@ namespace mcp::core {
             MCP_INFO("Registered built-in echo tool");
         }
 
+        // Load plugins from directories
+        for (const auto &directory: server_->plugin_directories_) {
+            MCP_TRACE("Loading plugins from directory: {}", directory);
+            server_->plugin_manager_->load_plugins_from_directory(directory);
+        }
+
+        // Register tools from plugins loaded from directories
+        auto all_tools = server_->plugin_manager_->get_all_tools();
+        MCP_INFO("Found {} tools from all plugins loaded from directories", all_tools.size());
+
+        for (const auto &tool_info: all_tools) {
+            if (!tool_info.name) {
+                MCP_WARN("Skipping tool with null name");
+                continue;
+            }
+
+            std::string tool_name = tool_info.name;
+            MCP_DEBUG("Registering tool: '{}' from plugin", tool_name);
+
+            // bind the tool call to the plugin manager
+            auto executor = [server_ptr = server_.get(), tool_name](const nlohmann::json &args) {
+                return server_ptr->plugin_manager_->call_tool(tool_name, args);
+            };
+
+            // register the tool in the registry table
+            server_->registry_->register_plugin_tool(tool_info, executor);
+        }
+
         // 3. load plugins and register their tools
         for (const auto &path: server_->plugin_paths_) {
             MCP_TRACE("Processing plugin: {}", path);
@@ -64,7 +108,6 @@ namespace mcp::core {
                 }
 
                 std::string tool_name = tool_info.name;
-                MCP_INFO("Registering tool: '{}' from plugin", tool_name);
 
                 // bind the tool call to the plugin manager
                 auto executor = [server_ptr = server_.get(), tool_name](const nlohmann::json &args) {

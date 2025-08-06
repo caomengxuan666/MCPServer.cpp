@@ -9,11 +9,16 @@ struct ToolInfo {
     bool is_streaming = false;
 };
 
-// Function pointer types
-using get_tools_func = ToolInfo *(*) (int *count);
-using call_tool_func = const char *(*) (const char *name, const char *args_json);
-using free_result_func = void (*)(const char *);
+// Function pointer to call a tool
+//if the tool is synchronous, return a JSON string
+//if the tool is streaming, return a StreamGenerator pointer (type erased)
+typedef const char *(*call_tool_func)(const char *name, const char *args_json);
 
+// Function pointer to get tools
+typedef ToolInfo *(*get_tools_func)(int *count);
+
+// Function pointer to free result
+typedef void (*free_result_func)(const char *);
 
 // streaming support
 typedef void *StreamGenerator;
@@ -36,6 +41,7 @@ struct StreamingResult {
     StreamGeneratorFree free; // the function to free the generator
 };
 
-//if the tool is synchronous, return a JSON string
-//if the tool is streaming, return a StreamGenerator pointer (type erased)
-extern "C" typedef const char *(*call_tool_func)(const char *name, const char *args_json);
+//cross platform strdup
+#ifdef _WIN32
+#define strdup _strdup
+#endif

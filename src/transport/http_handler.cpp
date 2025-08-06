@@ -203,7 +203,7 @@ namespace mcp::transport {
             }
 
             // Validate path
-            if (req.target != "/mcp" && req.target != "/message") {
+            if (req.target != "/mcp") {
                 co_await send_http_response(session, R"({"error":"Not Found"})", 404);
                 co_return;
             }

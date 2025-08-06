@@ -38,6 +38,7 @@ namespace mcp::core {
         // Used to record configuration
         bool should_register_echo_tool_ = false;
         std::vector<std::string> plugin_paths_;
+        std::vector<std::string> plugin_directories_;
 
         asio::io_context io_context_;
     };
@@ -48,6 +49,7 @@ namespace mcp::core {
         Builder &with_builtin_tools();
         Builder &with_echo_tool();
         Builder &with_plugin(const std::string &path);
+        Builder &with_plugin_path(const std::string &path = "");
         std::unique_ptr<MCPserver> build();
 
     private:

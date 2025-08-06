@@ -171,7 +171,7 @@ void McpDispatcher::send_json_response(std::shared_ptr<mcp::transport::Session> 
     oss << "\r\n";
     oss << json_body;
 
-    MCP_DEBUG("【发送JSON响应】:\n{}", oss.str());
+    MCP_DEBUG("【Sending Json Response】:\n{}", oss.str());
 
     auto send_task = [session, response = oss.str()]() mutable -> asio::awaitable<void> {
         try {
