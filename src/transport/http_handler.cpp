@@ -4,11 +4,29 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <random>
 #include <sstream>
 
 
 using asio::awaitable;
 using asio::use_awaitable;
+
+namespace {
+    // generate random data for session id
+    static std::string generate_session_id() noexcept {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<uint64_t> dist;
+
+        uint64_t part1 = dist(gen);
+        uint64_t part2 = dist(gen);
+
+        std::stringstream ss;
+        ss << std::hex << std::setw(16) << std::setfill('0') << part1
+           << std::hex << std::setw(16) << std::setfill('0') << part2;
+        return ss.str();
+    }
+}// namespace
 
 namespace mcp::transport {
 
@@ -183,8 +201,9 @@ namespace mcp::transport {
             for (const auto &[key, value]: req.headers) {
                 bytes_parsed += key.size() + 2 + value.size() + 2;// Each header length
             }
-            bytes_parsed += 2;              // Empty line ending headers
-            bytes_parsed += req.body.size();// Body length
+            bytes_parsed += 2;                // Empty line ending headers
+            bytes_parsed += req.body.size();  // Body length
+            session->set_headers(req.headers);//save headers
         }
 
         bool error_occurred = false;
@@ -202,14 +221,27 @@ namespace mcp::transport {
                 co_return;
             }
 
-            // Validate path
-            if (req.target != "/mcp") {
+            // Validate path - support both /mcp and MCP tool endpoints
+            bool is_valid_path = (req.target == "/mcp") ||
+                                 (req.target == "/tools/list") ||
+                                 (req.target == "/tools/call");
+
+            if (!is_valid_path) {
                 co_await send_http_response(session, R"({"error":"Not Found"})", 404);
                 co_return;
             }
-
             // Get session ID (from header or generate)
             std::string session_id = get_header_value(req.headers, "Mcp-Session-Id");
+
+            // first time: generate a new session ID
+            if (session_id.empty()) {
+                session_id = generate_session_id();
+                MCP_DEBUG("New session created: {}", session_id);
+                session->set_session_id(session_id);
+            } else {
+                MCP_DEBUG("Reconnecting to session: {}", session_id);
+                session->set_session_id(session_id);
+            }
 
             // Handle GET request (SSE connection initialization)
             if (req.method == "GET") {

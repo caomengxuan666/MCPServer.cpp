@@ -20,9 +20,6 @@ struct NumberGenerator {
     std::atomic<bool> running{true};// Controls stream termination
     std::chrono::steady_clock::time_point last_send_time;
 
-    // Added for enhanced tracking
-    std::atomic<int> event_seq{0};// Auto-incrementing event counter
-
     explicit NumberGenerator(int req_id) {}
 };
 
@@ -70,10 +67,9 @@ static int number_stream_next(StreamGenerator generator, const char **result_jso
     }
 
     // Build response
-    const int current_seq = ++gen->event_seq;
     nlohmann::json response = {
             {"jsonrpc", "2.0"},
-            {"result", {{"batch", batch}, {"seq_num", current_seq}, {"remaining", 1024 - gen->current_num + 1}}}};
+            {"result", {{"batch", batch}, {"remaining", 1024 - gen->current_num + 1}}}};
 
     static thread_local std::string buffer;
     buffer = response.dump();
@@ -121,7 +117,6 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
         auto *gen = new NumberGenerator(0);
         if (last_event_id > 0) {
             gen->current_num = 1 + (last_event_id * 10);
-            gen->event_seq = last_event_id;
         }
 
         return reinterpret_cast<const char *>(gen);

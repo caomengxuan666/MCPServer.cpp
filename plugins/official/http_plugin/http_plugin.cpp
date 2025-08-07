@@ -7,7 +7,6 @@
 #include <nlohmann/json.hpp>
 
 
-
 static std::vector<ToolInfo> g_tools;
 
 // Send HTTP GET request

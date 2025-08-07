@@ -44,7 +44,7 @@ namespace mcp::business {
         ~PluginManager();
 
         bool load_plugin(const std::string &path);
-        void load_plugins_from_directory(const std::string& directory);
+        void load_plugins_from_directory(const std::string &directory);
 
         // get tools from a specific plugin
         std::vector<ToolInfo> get_tools_from_plugin(const std::string &plugin_path) const;

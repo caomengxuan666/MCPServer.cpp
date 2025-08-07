@@ -99,3 +99,9 @@ if (BUILD_TESTS)
     add_subdirectory(third_party/googletest)
     add_subdirectory(tests)
 endif ()
+
+# example
+option(BUILD_EXAMPLES "Build examples" ON)
+if (BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif ()

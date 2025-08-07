@@ -47,8 +47,6 @@ namespace mcp::transport {
                 const std::string &body,
                 int status_code);
 
-    private:
-        MessageCallback on_message_;// Message callback function
 
         // Get value from headers map (handling unordered_map type headers)
         static std::string get_header_value(
@@ -59,6 +57,10 @@ namespace mcp::transport {
         static std::string get_header_value(
                 const std::string &headers_str,
                 const std::string &key);
+
+    private:
+        MessageCallback on_message_;// Message callback function
+
 
         asio::awaitable<void> discard_existing_buffer(std::shared_ptr<Session> session);
 
