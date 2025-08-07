@@ -7,12 +7,14 @@
 #include <stdexcept>
 
 std::vector<ToolInfo> ToolInfoParser::loadFromFile(const std::string &json_file_path) {
-    std::string full_path = (std::filesystem::path(mcp::core::getExecutableDirectory()) / json_file_path).string();
-    MCP_TRACE("Loading tool info from: {}", full_path);
+    std::filesystem::path configs_dir = std::filesystem::path(mcp::core::getExecutableDirectory()) / "configs";
+    std::filesystem::path config_path = configs_dir / json_file_path;
 
-    std::ifstream file(full_path);
+    MCP_TRACE("Loading tool info from: {}", config_path.string());
+
+    std::ifstream file(config_path);
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open tool info file: " + full_path);
+        throw std::runtime_error("Failed to open tool info file: " + config_path.string());
     }
 
     std::stringstream buffer;

@@ -47,14 +47,14 @@ target_include_directories(mcp-server++ PRIVATE
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/asio/asio/include)
 
-if(WIN32)
-    list(APPEND LINKED_LIBRARIES mimalloc-static)
-else()
-    list(APPEND LINKED_LIBRARIES mimalloc)
-endif()
+#if(WIN32)
+#    list(APPEND LINKED_LIBRARIES mimalloc-static)
+#else()
+#    list(APPEND LINKED_LIBRARIES mimalloc)
+#endif()
 
 # link mimalloc
-target_link_libraries(mcp-server++ PRIVATE ${LINKED_LIBRARIES})
+#target_link_libraries(mcp-server++ PRIVATE ${LINKED_LIBRARIES})
 
 if(MSVC)
     target_compile_options(mcp-server++ PRIVATE /W4 /permissive-)
@@ -77,7 +77,7 @@ add_subdirectory(tools)
 # turn off mimalloc tests and examples
 set(MI_BUILD_TESTS OFF CACHE BOOL "Build mimalloc tests" FORCE)
 set(MI_BUILD_EXAMPLES OFF CACHE BOOL "Build mimalloc examples" FORCE)
-add_subdirectory(third_party/mimalloc)
+#add_subdirectory(third_party/mimalloc)
 
 # Link all required libraries to the main executable
 target_link_libraries(mcp-server++ PRIVATE 

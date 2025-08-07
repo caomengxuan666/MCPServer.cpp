@@ -7,3 +7,5 @@ cmake-build-debug/
 cmake-build-release/
 /.idea
 mcp-server.log
+/out 
+/.vs

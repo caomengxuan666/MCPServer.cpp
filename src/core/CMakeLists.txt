@@ -32,4 +32,4 @@ else()
     list(APPEND CORE_LINKED_LIBRARIES mimalloc)
 endif()
 
-target_link_libraries(mcp_core PRIVATE ${CORE_LINKED_LIBRARIES})
+#target_link_libraries(mcp_core PRIVATE ${CORE_LINKED_LIBRARIES})

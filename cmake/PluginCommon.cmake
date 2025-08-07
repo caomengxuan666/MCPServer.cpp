@@ -2,6 +2,7 @@ add_compile_options(/utf-8)
 
 # Define the plugins output directory
 set(PLUGINS_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
+set(CONFIGS_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/configs")
 
 # Common function to configure a plugin
 # args:
@@ -71,31 +72,34 @@ function(configure_plugin plugin_name src_files)
     set(json_target_file "${plugin_name}_tools.json")
     
     if(EXISTS ${json_source_file})
+        # Create configs directory if not exists
+        file(MAKE_DIRECTORY ${CONFIGS_OUTPUT_DIR})
+        
         configure_file(
             ${json_source_file}
-            ${PLUGINS_OUTPUT_DIR}/${json_target_file}
+            ${CONFIGS_OUTPUT_DIR}/${json_target_file}
             COPYONLY
         )
     
         # build when the plugin is built
         add_custom_command(
-            OUTPUT ${PLUGINS_OUTPUT_DIR}/${json_target_file}
+            OUTPUT ${CONFIGS_OUTPUT_DIR}/${json_target_file}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${json_source_file}
-            ${PLUGINS_OUTPUT_DIR}/${json_target_file}
+            ${CONFIGS_OUTPUT_DIR}/${json_target_file}
             DEPENDS ${json_source_file}
-            COMMENT "Copying ${plugin_name} tools.json file"
+            COMMENT "Copying ${plugin_name} tools.json file to configs directory"
         )
         
         add_custom_target(${plugin_name}_json ALL
-            DEPENDS ${PLUGINS_OUTPUT_DIR}/${json_target_file}
+            DEPENDS ${CONFIGS_OUTPUT_DIR}/${json_target_file}
         )
         
         add_dependencies(${plugin_name} ${plugin_name}_json)
         
         
         install(FILES ${json_source_file}
-            DESTINATION bin/plugins
+            DESTINATION bin/configs
             RENAME ${json_target_file}
         )
     endif()

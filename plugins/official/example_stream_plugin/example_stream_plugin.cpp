@@ -2,107 +2,176 @@
 #include "mcp_plugin.h"
 #include <atomic>
 #include <chrono>
-#include <ctime>
 #include <nlohmann/json.hpp>
 #include <thread>
+#include <vector>
 
-
+/**
+ * Generator state for sequential number streaming
+ * 
+ * Tracks:
+ * - Current number in sequence
+ * - Streaming control flag
+ * - Timing for rate control
+ * - Event sequence counter
+ */
 struct NumberGenerator {
-    std::atomic<int> current_num{1};
-    std::atomic<bool> running{true};
+    std::atomic<int> current_num{1};// Current number being generated
+    std::atomic<bool> running{true};// Controls stream termination
     std::chrono::steady_clock::time_point last_send_time;
+
+    // Added for enhanced tracking
+    std::atomic<int> event_seq{0};// Auto-incrementing event counter
+
+    explicit NumberGenerator(int req_id) {}
 };
 
 
+/**
+ * @brief Generates the next batch of numbers in the stream
+ * 
+ * @param generator Opaque pointer to generator state
+ * @param result_json Output parameter for JSON result
+ * @return int 0=success, 1=end-of-stream, -1=error
+ * Generates the next batch of numbers with full tracking
+ * 
+ * Implements:
+ * 1. Rate limiting (10 numbers/second)
+ * 2. Sequence tracking
+ * 3. Breakpoint resumption support
+ */
 static int number_stream_next(StreamGenerator generator, const char **result_json) {
     if (!generator) {
-        *result_json = R"({"error": "Invalid generator pointer"})";
-        return 1;
+        *result_json = R"({"error":"Invalid generator"})";
+        return -1;
     }
 
     auto *gen = static_cast<NumberGenerator *>(generator);
 
+    // End condition check
     if (!gen->running || gen->current_num > 1024) {
-        *result_json = nullptr;// return nullptr to indicate end of stream
+        *result_json = nullptr;
         return 1;
     }
 
+    // Rate control
     auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - gen->last_send_time).count();
-    auto wait_ms = 100 - elapsed;
-    if (wait_ms > 0) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           now - gen->last_send_time)
+                           .count();
+    if (elapsed < 100) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100 - elapsed));
     }
 
-    nlohmann::json numbers_json;
-    numbers_json["jsonrpc"] = "2.0";
-    numbers_json["method"] = "number_batch";
-    numbers_json["params"]["batch"] = nlohmann::json::array();
-    numbers_json["params"]["timestamp"] = std::time(nullptr);
-
-    int count = 0;
-    while (count < 10 && gen->current_num <= 1024) {
-        numbers_json["params"]["batch"].push_back(gen->current_num++);
-        count++;
+    // Generate batch
+    std::vector<int> batch;
+    while (batch.size() < 10 && gen->current_num <= 1024) {
+        batch.push_back(gen->current_num++);
     }
 
-    gen->last_send_time = std::chrono::steady_clock::now();
+    // Build response
+    const int current_seq = ++gen->event_seq;
+    nlohmann::json response = {
+            {"jsonrpc", "2.0"},
+            {"result", {{"batch", batch}, {"seq_num", current_seq}, {"remaining", 1024 - gen->current_num + 1}}}};
 
     static thread_local std::string buffer;
-    buffer = numbers_json.dump();
+    buffer = response.dump();
     *result_json = buffer.c_str();
 
+    gen->last_send_time = now;
     return 0;
 }
-
+/**
+ * @brief Cleans up generator resources
+ * 
+ * @param generator Opaque pointer to generator state
+ */
 static void number_stream_free(StreamGenerator generator) {
-    auto *gen = static_cast<NumberGenerator *>(generator);
-    if (gen) {
+    if (generator) {
+        auto *gen = static_cast<NumberGenerator *>(generator);
         gen->running = false;
         delete gen;
     }
 }
 
-extern "C" MCP_API StreamGeneratorNext get_stream_next() {
-    return number_stream_next;
-}
-
-extern "C" MCP_API StreamGeneratorFree get_stream_free() {
-    return number_stream_free;
-}
-
+/**
+ * Handles tool initialization with resumption support
+ * 
+ * Expected params format:
+ * {
+ *   "id": 123,                // Required: request ID
+ *   "last_event_id": 5        // Optional: for resuming
+ * }
+ */
 extern "C" MCP_API const char *call_tool(const char *name, const char *args_json) {
     try {
-        std::string tool_name = name;
-        if (tool_name == "example_stream") {
-            NumberGenerator *gen = new NumberGenerator();
-            gen->last_send_time = std::chrono::steady_clock::now();
-            return reinterpret_cast<const char *>(gen);
-        } else {
-            return strdup(R"({"error": "Unknown tool: example_stream"})");
+        // Parse arguments (compatible with both tools/call and direct JSON-RPC)
+        nlohmann::json args = args_json ? nlohmann::json::parse(args_json) : nlohmann::json::object();
+
+        // Handle start position
+        int last_event_id = 0;
+        if (args.contains("last_event_id")) {
+            last_event_id = args["last_event_id"].get<int>();
+        } else if (args.contains("arguments") && args["arguments"].contains("last_event_id")) {
+            last_event_id = args["arguments"]["last_event_id"].get<int>();
         }
+
+        // Create generator
+        auto *gen = new NumberGenerator(0);
+        if (last_event_id > 0) {
+            gen->current_num = 1 + (last_event_id * 10);
+            gen->event_seq = last_event_id;
+        }
+
+        return reinterpret_cast<const char *>(gen);
+
     } catch (const std::exception &e) {
-        return strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
+        return strdup((R"({"error":")" + std::string(e.what()) + R"("})").c_str());
     }
 }
 
+/**
+ * @brief Returns plugin metadata and capabilities
+ * @note You had better use tools.json to generate g_tools array
+ * @param count Output parameter for tool count
+ * @return ToolInfo* Array of tool descriptors
+ */
+static std::vector<ToolInfo> g_tools = {
+        {
+                "example_stream",                                             // Tool name
+                "Generates number sequences from 1-1024 at 10 numbers/second",// Description
+                R"({
+            "type": "object",
+            "properties": {
+                "start": {"type": "number", "minimum": 1, "maximum": 1024}
+            },
+            "required": []
+        })",                                                                  // JSON Schema
+                true                                                          // is_streaming
+        }};
+
+extern "C" MCP_API ToolInfo *get_tools(int *count) {
+    *count = static_cast<int>(g_tools.size());
+    return g_tools.data();
+}
+
+/**
+ * @brief Releases memory allocated for strings
+ * 
+ * @param result String pointer to free
+ */
 extern "C" MCP_API void free_result(const char *result) {
     if (result) {
         std::free(const_cast<char *>(result));
     }
 }
 
-static std::vector<ToolInfo> g_tools = {
-        {"example_stream",
-         "Stream numbers from 1 to 1024, exactly 10 numbers per second",
-         R"({
-            "type": "object",
-            "properties": {},
-            "required": []
-        })",
-         true}};
+// Export streaming functions
+extern "C" MCP_API StreamGeneratorNext get_stream_next() {
+    return number_stream_next;
+}
 
-extern "C" MCP_API ToolInfo *get_tools(int *count) {
-    *count = static_cast<int>(g_tools.size());
-    return g_tools.data();
+extern "C" MCP_API StreamGeneratorFree get_stream_free() {
+    return number_stream_free;
 }
