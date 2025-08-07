@@ -101,3 +101,10 @@ The `sdk` directory contains the headers and utilities needed to develop plugins
 4. Use the provided `ToolInfoParser` to load tool definitions from JSON
 5. For streaming tools, ensure proper resource cleanup in the free function
 6. Follow the error handling pattern demonstrated in official plugins
+
+## example of usage:
+```bash
+ curl -X POST http://localhost:6666/mcp -H "Content-Type: application/json" -H "Accept: text/event-stream" -H "Last-Event-ID: 25" -H "Mcp-Session-Id: c1996ba031f882b4f8d0788deed90e1d" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"example_stream","arguments":{}}}'
+```
+
+> This is a simple example of a JSON-RPC 2.0 server in C. It uses libcurl for making HTTP requests and libjansson for JSON parsing. The server supports two methods: `tools/list` and `tools/call`. The `tools/list` method returns a list of available tools, while the `tools/call` method calls a tool and returns its result. The server also supports streaming tools, which are tools that return a stream of results.

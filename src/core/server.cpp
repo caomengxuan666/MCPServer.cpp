@@ -48,6 +48,17 @@ namespace mcp::core {
         server_->plugin_manager_ = std::make_unique<business::PluginManager>();
         server_->registry_->set_plugin_manager(server_->plugin_manager_);
 
+        server_->request_handler_ = std::make_unique<business::RequestHandler>(
+                server_->registry_,
+
+                [server_ptr = server_.get()](const std::string &resp,
+                                             std::shared_ptr<transport::Session> session,
+                                             [[maybe_unused]] const std::string &session_id) {
+                    // pass session_id
+                    server_ptr->dispatcher_->send_json_response(session, resp, 200);
+                });
+
+
         MCP_TRACE("Created ToolRegistry (initial size: {})", server_->registry_->get_all_tool_names().size());
 
         // register built-in tools
@@ -155,7 +166,8 @@ namespace mcp::core {
                                                          const std::string &session_id) {
                 MCP_DEBUG("HTTP message received: \n{}", msg);
                 // handle by dispatcher
-                dispatcher_->handle_request(msg, session, session_id);
+                //dispatcher_->handle_request(msg, session, session_id);
+                request_handler_->handle_request(msg, session, session_id);
             });
 
             if (success) {

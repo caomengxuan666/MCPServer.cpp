@@ -5,6 +5,7 @@
 #endif
 
 #include "business/plugin_manager.h"
+#include "business/request_handler.h"
 #include "business/tool_registry.h"
 #include "mcp_dispatcher.h"
 #include "transport/http_transport.h"
@@ -34,6 +35,7 @@ namespace mcp::core {
         std::shared_ptr<business::PluginManager> plugin_manager_;
         std::unique_ptr<McpDispatcher> dispatcher_;
         std::unique_ptr<mcp::transport::HttpTransport> http_transport_;
+        std::unique_ptr<business::RequestHandler> request_handler_;
 
         // Used to record configuration
         bool should_register_echo_tool_ = false;

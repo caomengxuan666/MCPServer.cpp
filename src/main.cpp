@@ -7,7 +7,7 @@
 int main() {
     try {
         // 1. init the logger
-        mcp::core::initializeAsyncLogger("mcp-server.log", "info");
+        mcp::core::initializeAsyncLogger("mcp-server.log", "trace");
         mcp::core::MCPLogger::instance()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
         MCP_INFO("MCPServer.cpp started");
 

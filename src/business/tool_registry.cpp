@@ -49,7 +49,7 @@ namespace mcp::business {
     }
 
     std::optional<nlohmann::json> ToolRegistry::execute(const std::string &name, const nlohmann::json &args) {
-        MCP_INFO("Querying tool: '{}' (registry size: {})", name, tools_.size());
+        MCP_DEBUG("Querying tool: '{}' (registry size: {})", name, tools_.size());
 
         auto it = tools_.find(name);
         if (it == tools_.end()) {

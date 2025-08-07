@@ -2,66 +2,42 @@
 #include "request_handler.h"
 #include "core/logger.h"
 #include "protocol/json_rpc.h"
+#include "rpc_router.h"
 
 
 namespace mcp::business {
 
-    RequestHandler::RequestHandler(std::shared_ptr<ToolRegistry> registry)
-        : registry_(std::move(registry)) {
-        transport_.open([this](const std::string &msg) {
-            handle_request(msg);
-        });
+    RequestHandler::RequestHandler(std::shared_ptr<ToolRegistry> registry, ResponseCallback send_response)
+        : registry_(std::move(registry)), send_response_(std::move(send_response)) {
+        // register route handler
+        router_.register_handler("initialize", handle_initialize);
+        router_.register_handler("tools/list", handle_tools_list);
+        router_.register_handler("tools/call", handle_tools_call);
+        router_.register_handler("exit", handle_exit);
     }
 
-    void RequestHandler::handle_request(const std::string &msg) {
+    void RequestHandler::handle_request(
+            const std::string &msg,
+            std::shared_ptr<transport::Session> session,
+            const std::string &session_id) {
         MCP_DEBUG("Raw message: {}", msg);
         auto req = mcp::protocol::parse_request(msg);
-        if (!req) return;
+        if (!req) {
+            // invalid request
+            std::string err = protocol::make_error(
+                    protocol::error_code::INVALID_REQUEST,
+                    "Invalid JSON-RPC request", nullptr);
+            send_response_(err, session, session_id);
+            return;
+        }
 
-        if (req->method == "initialize") {
-            mcp::protocol::Response resp;
-            resp.id = req->id.value_or(nullptr);
-            resp.result = nlohmann::json{{"capabilities", nlohmann::json::object()}};
-            transport_.write(mcp::protocol::make_response(resp));
-        } else if (req->method == "listTools") {
-            auto tools = registry_->get_all_tools();
-            mcp::protocol::Response resp;
-            resp.id = req->id.value_or(nullptr);
-            nlohmann::json tools_json = nlohmann::json::array();
-            for (const auto &tool: tools) {
-                tools_json.push_back({{"name", tool.name},
-                                      {"description", tool.description},
-                                      {"parameters", tool.parameters}});
-            }
-            resp.result = tools_json;
-            transport_.write(mcp::protocol::make_response(resp));
-        } else if (req->method == "callTool") {
-            auto params = req->params;
-            std::string tool_name = params.value("name", "");
-            auto args = params.value("arguments", nlohmann::json{});
+        //handle routers
+        auto response = router_.route_request(*req, registry_, session, session_id);
 
-            auto result = registry_->execute(tool_name, args);
-            if (result) {
-                mcp::protocol::Response resp;
-                resp.id = req->id.value_or(nullptr);
-                resp.result = *result;
-                transport_.write(mcp::protocol::make_response(resp));
-            } else {
-                auto err = mcp::protocol::make_error(
-                        mcp::protocol::error_code::METHOD_NOT_FOUND,
-                        "Tool not found: " + tool_name,
-                        req->id.value_or(nullptr));
-                transport_.write(err);
-            }
-        } else if (req->method == "exit") {
-            MCP_INFO("Exit command received");
-            std::exit(0);
-        } else {
-            auto err = mcp::protocol::make_error(
-                    mcp::protocol::error_code::METHOD_NOT_FOUND,
-                    "Method not supported: " + req->method,
-                    req->id.value_or(nullptr));
-            transport_.write(err);
+        // Only send unStreaming responses
+        if (response.id != nullptr) {
+            std::string resp_str = protocol::make_response(response);
+            send_response_(resp_str, session, session_id);
         }
     }
 

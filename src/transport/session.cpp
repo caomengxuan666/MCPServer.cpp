@@ -64,7 +64,7 @@ namespace mcp::transport {
             }
         } catch (const std::exception &e) {
             if (!closed_) {
-                MCP_WARN("Session read error: {}", e.what());
+                MCP_WARN("Session read error");
             }
         }
         close();
@@ -86,7 +86,7 @@ namespace mcp::transport {
 
             co_await asio::async_write(socket_, asio::buffer(message), use_awaitable);
         } catch (const std::exception &e) {
-            MCP_ERROR("Failed to write to socket: {}", e.what());
+            MCP_ERROR("Failed to write to socket");
             close();
         }
         co_return;
@@ -99,14 +99,14 @@ namespace mcp::transport {
             while (socket_.available(ec) > 0 && !ec) {
                 socket_.read_some(asio::buffer(discard_buf), ec);
             }
-            socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
-            socket_.close(ec);
-            std::fill(buffer_.begin(), buffer_.end(), 0);
+            (void) socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+            (void) socket_.close(ec);
+            std::fill(buffer_.begin(), buffer_.end(), static_cast<char>(0));
             closed_ = true;
         }
     }
 
     void Session::clear_buffer() {
-        std::fill(buffer_.begin(), buffer_.end(), 0);
+        std::fill(buffer_.begin(), buffer_.end(), static_cast<char>(0));
     }
 }// namespace mcp::transport

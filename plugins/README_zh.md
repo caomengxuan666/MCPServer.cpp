@@ -101,3 +101,9 @@ configure_plugin(plugin_name plugin_name.cpp)
 4. 使用提供的 `ToolInfoParser` 从 JSON 加载工具定义
 5. 对于流式工具，确保在释放函数中正确清理资源
 6. 遵循官方插件中演示的错误处理模式
+
+# 示例用法：
+```bash
+ curl -X POST http://localhost:6666/mcp -H "Content-Type: application/json" -H "Accept: text/event-stream" -H "Last-Event-ID: 25" -H "Mcp-Session-Id: c1996ba031f882b4f8d0788deed90e1d" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"example_stream","arguments":{}}}'
+```
+> 这是一个简单的 JSON-RPC 2.0 服务器的 C 实现。它使用 libcurl 进行 HTTP 请求，libjansson 进行 JSON 解析。该服务器支持两种方法：`tools/list` 和 `tools/call`。`tools/list` 方法返回可用的工具列表，而 `tools/call` 方法调用工具并返回其结果。该服务器还支持流式工具，即返回流结果的工具。

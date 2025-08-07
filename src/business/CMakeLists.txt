@@ -1,9 +1,5 @@
 # src/business/CMakeLists.txt
-set(BUSINESS_SOURCES
-    plugin_manager.cpp
-    request_handler.cpp
-    tool_registry.cpp
-)
+file(GLOB BUSINESS_SOURCES *.cpp)
 
 add_library(mcp_business ${BUSINESS_SOURCES})
 

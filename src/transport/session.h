@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <unordered_map>
 #if defined(_WIN32) && !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x0601
 #endif
@@ -61,11 +62,20 @@ namespace mcp::transport {
 
         std::array<char, 8192> &get_buffer() { return buffer_; }
 
+        void set_session_id(const std::string &session_id) { session_id_ = session_id; }
+
+        const std::string &get_session_id() const { return session_id_; }
+
+        void set_headers(const std::unordered_map<std::string, std::string> &headers) { headers_ = headers; }
+        const std::unordered_map<std::string, std::string> &get_headers() const { return headers_; }
+
     private:
         asio::ip::tcp::socket socket_;
+        std::string session_id_;
         std::array<char, 8192> buffer_;
         bool closed_ = false;
         std::string accept_header_;
+        std::unordered_map<std::string, std::string> headers_;
     };
 
 }// namespace mcp::transport
