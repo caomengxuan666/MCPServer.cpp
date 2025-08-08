@@ -38,7 +38,7 @@ static std::string get_current_time() {
 
         // Return raw business data without RPC wrapper
         return nlohmann::json{{"current_time", ss.str()}}.dump();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
@@ -62,7 +62,7 @@ static std::string get_system_info() {
 
         // Return raw business data without RPC wrapper
         return nlohmann::json{{"os", os}, {"arch", arch}}.dump();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
@@ -114,7 +114,7 @@ static std::string list_files(const std::string &path) {
 
         // Return raw business data
         return nlohmann::json{{"files", result}}.dump();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
@@ -172,7 +172,7 @@ static std::string ping_host(const std::string &host) {
 
         // Return raw business data
         return nlohmann::json{{"output", result}, {"success", success}}.dump();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
@@ -188,7 +188,7 @@ static std::string ping_host(const std::string &host) {
 static std::string check_connectivity() {
     try {
         return ping_host("8.8.8.8");// Use Google DNS as test target
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
@@ -236,7 +236,7 @@ static std::string get_public_ip() {
                                {"message", "Failed to get public IP"}}}}
                     .dump();
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
@@ -358,10 +358,10 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
 
         if (tool_name == "get_current_time") {
             std::string result = get_current_time();
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "get_system_info") {
             std::string result = get_system_info();
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "list_files") {
             std::string path = args.value("path", "");
             if (path.empty()) {
@@ -370,7 +370,7 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
                 return nullptr;
             }
             std::string result = list_files(path);
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "ping_host") {
             std::string host = args.value("host", "");
             if (host.empty()) {
@@ -379,10 +379,10 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
                 return nullptr;
             }
             std::string result = ping_host(host);
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "check_connectivity") {
             std::string result = check_connectivity();
-            return _strdup(result.c_str());
+            return strdup(result.c_str());
         } else if (tool_name == "get_public_ip") {
             std::string result = get_public_ip();
             auto result_json = nlohmann::json::parse(result);
@@ -394,7 +394,7 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
                 return nullptr;// Return nullptr to indicate an error
             }
 
-            return _strdup(result.c_str());// Return result on success
+            return strdup(result.c_str());// Return result on success
         } else if (tool_name == "stream_log_file") {
             std::string path = args.value("path", "");
             if (path.empty()) {

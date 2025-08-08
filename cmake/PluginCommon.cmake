@@ -1,5 +1,6 @@
+if(MSVC)
 add_compile_options(/utf-8)
-
+endif()
 # Define the plugins output directory
 set(PLUGINS_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
 set(CONFIGS_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/configs")
