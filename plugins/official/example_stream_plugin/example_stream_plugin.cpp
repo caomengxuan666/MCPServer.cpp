@@ -66,7 +66,7 @@ static int number_stream_next(StreamGenerator generator, const char **result_jso
         batch.push_back(gen->current_num++);
     }
 
-    // Build response
+
     nlohmann::json response = {
             {"jsonrpc", "2.0"},
             {"result", {{"batch", batch}, {"remaining", 1024 - gen->current_num + 1}}}};

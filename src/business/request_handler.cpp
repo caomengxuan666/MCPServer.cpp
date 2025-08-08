@@ -26,7 +26,7 @@ namespace mcp::business {
             // invalid request
             std::string err = protocol::make_error(
                     protocol::error_code::INVALID_REQUEST,
-                    "Invalid JSON-RPC request", nullptr);
+                    "Invalid JSON-RPC request");
             send_response_(err, session, session_id);
             return;
         }

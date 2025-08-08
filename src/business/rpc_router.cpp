@@ -6,10 +6,11 @@
 #include "transport/mcp_cache.h"
 #include "transport/session.h"
 #include "version.h"
-#include <algorithm>
 #include <asio/co_spawn.hpp>
 #include <asio/detached.hpp>
 #include <mutex>
+
+
 #include <string>
 
 
@@ -614,7 +615,10 @@ namespace mcp::business {
             }
 
             nlohmann::json content_array = nlohmann::json::array();
-            content_array.push_back({{"type", "text"}, {"text", result->dump()}});
+            //todo: support more types,not only text but also binary,image,table,etc.
+            content_array.push_back(nlohmann::json{
+                    {"type", "text"},
+                    {"text", *result}});
             resp.result = nlohmann::json{{"content", content_array}};
             return resp;
         }
