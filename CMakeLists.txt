@@ -85,9 +85,9 @@ set(DISABLE_SYSTEM_MIMALLOC ON CACHE BOOL "Disable system mimalloc")
 
 # Link all required libraries to the main executable
 target_link_libraries(mcp-server++ PRIVATE
-    mcp_business
     mcp_transport
     mcp_protocol
+    mcp_business
     mcp_core
     mcp_plugin_sdk
 )
