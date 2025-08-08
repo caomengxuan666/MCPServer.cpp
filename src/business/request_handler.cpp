@@ -2,11 +2,17 @@
 #include "request_handler.h"
 #include "core/logger.h"
 #include "protocol/json_rpc.h"
+#include "routers/exit.hpp"
+#include "routers/initialize.hpp"
+#include "routers/tool_list.hpp"
+#include "routers/tools_call.hpp"
 #include "rpc_router.h"
+
 
 
 namespace mcp::business {
 
+    using namespace routers;
     RequestHandler::RequestHandler(std::shared_ptr<ToolRegistry> registry, ResponseCallback send_response)
         : registry_(std::move(registry)), send_response_(std::move(send_response)) {
         // register route handler

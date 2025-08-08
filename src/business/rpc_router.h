@@ -6,7 +6,6 @@
 #include <memory>
 #include <unordered_map>
 
-
 namespace mcp::business {
     using RpcHandler = std::function<protocol::Response(
             const protocol::Request &,
@@ -14,30 +13,6 @@ namespace mcp::business {
             std::shared_ptr<transport::Session>,
             const std::string &// SessionID
             )>;
-
-    protocol::Response handle_initialize(
-            const protocol::Request &req,
-            std::shared_ptr<ToolRegistry> registry,
-            std::shared_ptr<transport::Session> session,
-            const std::string &session_id);
-
-    protocol::Response handle_tools_list(
-            const protocol::Request &req,
-            std::shared_ptr<ToolRegistry> registry,
-            std::shared_ptr<transport::Session> session,
-            const std::string &session_id);
-
-    protocol::Response handle_tools_call(
-            const protocol::Request &req,
-            std::shared_ptr<ToolRegistry> registry,
-            std::shared_ptr<transport::Session> session,
-            const std::string &session_id);
-
-    protocol::Response handle_exit(
-            const protocol::Request &req,
-            std::shared_ptr<ToolRegistry> registry,
-            std::shared_ptr<transport::Session> session,
-            const std::string &session_id);
 
     class RpcRouter {
     public:

@@ -1,22 +1,64 @@
 // plugins/official/file_plugin/file_plugin.cpp
 #include "core/mcpserver_api.h"
 #include "mcp_plugin.h"
+#include "protocol/json_rpc.h"
 #include "tool_info_parser.h"
 #include <cstdlib>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <sstream>
 
+
 static std::vector<ToolInfo> g_tools;
 
 static std::string read_file(const std::string &path) {
-    std::ifstream f(path);
-    if (!f.is_open()) {
-        return R"({"error": "File not found or cannot open"})";
+    try {
+        std::ifstream f(path);
+        if (!f.is_open()) {
+            // Return custom error code and message, consistent with safe_system_plugin
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "File not found or cannot open"}}}}
+                    .dump();
+        }
+        std::stringstream buffer;
+        buffer << f.rdbuf();
+        return nlohmann::json{{"content", buffer.str()}}.dump();
+    } catch (const std::exception& e) {
+        // Return custom error code and message, consistent with safe_system_plugin
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Failed to read file: " + std::string(e.what())}}}}
+                .dump();
     }
-    std::stringstream buffer;
-    buffer << f.rdbuf();
-    return nlohmann::json{{"content", buffer.str()}}.dump();
+}
+
+static std::string write_file(const std::string &path, const std::string &content) {
+    try {
+        std::ofstream f(path);
+        if (!f.is_open()) {
+            // Return custom error code and message, consistent with safe_system_plugin
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "Cannot open file for writing"}}}}
+                    .dump();
+        }
+        f << content;
+        f.close();
+        return R"({"result": "success"})";
+    } catch (const std::exception& e) {
+        // Return custom error code and message, consistent with safe_system_plugin
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Failed to write file: " + std::string(e.what())}}}}
+                .dump();
+    }
+}
+
+static std::string list_files(const std::string &path) {
+    // This is a simplified implementation that just returns the path
+    // A real implementation would actually list files in the directory
+    return nlohmann::json{{"path", path}}.dump();
 }
 
 extern "C" MCP_API ToolInfo *get_tools(int *count) {
@@ -33,22 +75,47 @@ extern "C" MCP_API ToolInfo *get_tools(int *count) {
     }
 }
 
-extern "C" MCP_API const char *call_tool(const char *name, const char *args_json) {
+extern "C" MCP_API const char *call_tool(const char *name, const char *args_json, MCPError *error) {
     try {
         auto args = nlohmann::json::parse(args_json);
         std::string tool_name = name;
 
         if (tool_name == "read_file") {
-            std::string path = args.value("path", "");
-            if (path.empty()) {
-                return strdup(R"({"error": "Missing 'path' parameter"})");
+            std::string file_path = args.value("path", "");
+            if (file_path.empty()) {
+                // Use MCPError to return error instead of constructing JSON string
+                error->code = mcp::protocol::error_code::INVALID_TOOL_INPUT;
+                error->message = "Missing 'path' parameter";
+                return nullptr;
             }
-            std::string result = read_file(path);
+            std::string result = read_file(file_path);
             return strdup(result.c_str());
+        } else if (tool_name == "write_file") {
+            std::string file_path = args.value("path", "");
+            std::string content = args.value("content", "");
+            if (file_path.empty()) {
+                // Use MCPError to return error instead of constructing JSON string
+                error->code = mcp::protocol::error_code::INVALID_TOOL_INPUT;
+                error->message = "Missing 'path' parameter";
+                return nullptr;
+            }
+            std::string result = write_file(file_path, content);
+            return strdup(result.c_str());
+        } else if (tool_name == "list_files") {
+            std::string dir_path = args.value("path", ".");
+            std::string result = list_files(dir_path);
+            return strdup(result.c_str());
+        } else {
+            // Use MCPError to return error instead of constructing JSON string
+            error->code = mcp::protocol::error_code::TOOL_NOT_FOUND;
+            error->message = "Unknown tool";
+            return nullptr;
         }
-        return strdup(R"({"error": "Unknown tool"})");
     } catch (const std::exception &e) {
-        return strdup((R"({"error": ")" + std::string(e.what()) + R"("})").c_str());
+        // Use MCPError to return error instead of constructing JSON string
+        error->code = mcp::protocol::error_code::INTERNAL_ERROR;
+        error->message = e.what();
+        return nullptr;
     }
 }
 

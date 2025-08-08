@@ -3,8 +3,10 @@
 #include <atomic>
 #include <chrono>
 #include <nlohmann/json.hpp>
+#include <protocol/json_rpc.h>
 #include <thread>
 #include <vector>
+
 
 /**
  * Generator state for sequential number streaming
@@ -25,11 +27,11 @@ struct NumberGenerator {
 
 
 /**
- * @brief Generates the next batch of numbers in the stream
+ * @brief Generates next batch of numbers in sequence
  * 
  * @param generator Opaque pointer to generator state
- * @param result_json Output parameter for JSON result
- * @return int 0=success, 1=end-of-stream, -1=error
+ * @param result_json Output parameter for next JSON result
+ * @return 0 on success, 1 on completion, -1 on error
  * Generates the next batch of numbers with full tracking
  * 
  * Implements:
@@ -37,15 +39,13 @@ struct NumberGenerator {
  * 2. Sequence tracking
  * 3. Breakpoint resumption support
  */
-static int number_stream_next(StreamGenerator generator, const char **result_json) {
+static int number_stream_next(StreamGenerator generator, const char **result_json, MCPError *error) {
     if (!generator) {
-        *result_json = R"({"error":"Invalid generator"})";
-        return -1;
+        *result_json = nullptr;
+        return 1;
     }
 
     auto *gen = static_cast<NumberGenerator *>(generator);
-
-    // End condition check
     if (!gen->running || gen->current_num > 1024) {
         *result_json = nullptr;
         return 1;
@@ -100,7 +100,7 @@ static void number_stream_free(StreamGenerator generator) {
  *   "last_event_id": 5        // Optional: for resuming
  * }
  */
-extern "C" MCP_API const char *call_tool(const char *name, const char *args_json) {
+extern "C" MCP_API const char *call_tool(const char *name, const char *args_json, MCPError *error) {
     try {
         // Parse arguments (compatible with both tools/call and direct JSON-RPC)
         nlohmann::json args = args_json ? nlohmann::json::parse(args_json) : nlohmann::json::object();
@@ -122,7 +122,9 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
         return reinterpret_cast<const char *>(gen);
 
     } catch (const std::exception &e) {
-        return strdup((R"({"error":")" + std::string(e.what()) + R"("})").c_str());
+        error->code = mcp::protocol::error_code::INTERNAL_ERROR;
+        error->message = e.what();
+        return nullptr;
     }
 }
 

@@ -9,3 +9,4 @@ cmake-build-release/
 mcp-server.log
 /out 
 /.vs
+checks.json

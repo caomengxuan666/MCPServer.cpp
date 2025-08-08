@@ -7,7 +7,7 @@
  */
 // src/transport/sse_transport.h
 #pragma once
-
+/*
 #include "business/plugin_manager.h"
 #include "business/tool_registry.h"
 #include "session.h"
@@ -39,3 +39,4 @@ namespace mcp::transport {
     };
 
 }// namespace mcp::transport
+*/

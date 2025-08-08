@@ -36,12 +36,12 @@ namespace mcp::business {
             return false;
         }
 
-        // get the plugin functions
+        // Get the plugin functions
         auto get_tools = (get_tools_func) GET_FUNC(handle, "get_tools");
         auto call_tool = (call_tool_func) GET_FUNC(handle, "call_tool");
         auto free_result = (free_result_func) GET_FUNC(handle, "free_result");
 
-        // load stream functions if availableget_stream_next
+        // Load stream functions if available
         auto get_stream_next_loader = (get_stream_next_func) GET_FUNC(handle, "get_stream_next");
         auto get_stream_free_loader = (get_stream_free_func) GET_FUNC(handle, "get_stream_free");
         std::string plugin_name = plugin_path.filename().string();
@@ -53,14 +53,14 @@ namespace mcp::business {
             return false;
         }
 
-        // loading tools from the plugin
+        // Loading tools from the plugin
         int tool_count = 0;
         ToolInfo *tool_infos = get_tools(&tool_count);
         if (!tool_infos || tool_count == 0) {
             MCP_WARN("Plugin has no tools: {}", plugin_file_path);
         }
 
-        // store the plugins
+        // Store the plugins
         auto plugin = std::make_unique<Plugin>();
         plugin->handle = handle;
         plugin->get_tools = get_tools;
@@ -104,12 +104,12 @@ namespace mcp::business {
 
         MCP_INFO("Scanning plugin directory: {}", dir_path.string());
 
-        // foreach file in directory
+        // Foreach file in directory
         for (const auto &entry: std::filesystem::directory_iterator(dir_path)) {
             if (entry.is_regular_file()) {
                 std::string filename = entry.path().filename().string();
 
-                // cross platform
+                // Cross platform
 #ifdef _WIN32
                 if (entry.path().extension() == ".dll") {
 #elif __APPLE__
@@ -155,75 +155,134 @@ namespace mcp::business {
                     try {
                         std::string args_json = args.dump();
                         set_current_plugin(plugin.get());
-                        const char *result_json = plugin->call_tool(name.c_str(), args_json.c_str());
+
+                        // Create MCPError object to receive plugin errors
+                        MCPError error = {0, nullptr, nullptr, nullptr};
+                        const char *result_json = plugin->call_tool(name.c_str(), args_json.c_str(), &error);
                         set_current_plugin(nullptr);
 
-                        if (!result_json) {
-                            return nlohmann::json{{"error", "Tool returned null result"}};
+                        // Check if there is error information
+                        if (error.code != 0) {
+                            MCP_CRITICAL("Error calling tool: {}", error.message);
+                            return nlohmann::json{
+                                    {"error", {{"code", error.code},// Use the error code returned by the plugin
+                                               {"message", error.message ? error.message : "Unknown error"}}}};
                         }
+
+                        if (!result_json) {
+                            return nlohmann::json{
+                                    {"error", {{"code", -32603},// INTERNAL_ERROR
+                                               {"message", "Tool returned null result"}}}};
+                        }
+
+                        // Parse the JSON returned by the plugin
                         auto result = nlohmann::json::parse(result_json);
                         plugin->free_result(result_json);
+
+                        // If the JSON returned by the plugin contains an error field, return the error directly
+                        if (result.contains("error")) {
+                            // Use the error code and message returned by the plugin
+                            return nlohmann::json{
+                                    {"error", {{"code", result["error"].value("code", -32603)}, {"message", result["error"].value("message", "Unknown error")}}}};
+                        }
+
+                        // Return result on success
                         return result;
                     } catch (const std::exception &e) {
                         MCP_ERROR("Error calling tool '{}': {}", name, e.what());
-                        return nlohmann::json{{"error", e.what()}};
+                        return nlohmann::json{
+                                {"error", {{"code", -32603},// INTERNAL_ERROR
+                                           {"message", e.what()}}}};
                     }
                 }
             }
         }
-        return nlohmann::json{{"error", "Tool not found: " + name}};
+        return nlohmann::json{
+                {"error", {{"code", -32601},// METHOD_NOT_FOUND
+                           {"message", "Tool not found: " + name}}}};
     }
-
 
     std::optional<std::string> PluginManager::find_plugin_name_for_tool(const std::string &tool_name) const {
         for (const auto &[plugin_name, plugin_ptr]: plugins_) {
             for (const auto &tool_info: plugin_ptr->tool_list) {
                 if (tool_info.name && std::string(tool_info.name) == tool_name) {
-                    return plugin_name;
+                    return plugin_name;// Return when found
                 }
             }
         }
-        return std::nullopt;
-    }
-    StreamGenerator PluginManager::start_streaming_tool(const std::string &name, const nlohmann::json &args) {
-        for (const auto &[plugin_name, plugin]: plugins_) {
-            for (const auto &tool: plugin->tool_list) {
-                if (tool.name && std::string(tool.name) == name && tool.is_streaming) {
-                    try {
-                        std::string args_json = args.dump();
-                        const char *raw_result = plugin->call_tool(name.c_str(), args_json.c_str());
-                        if (!raw_result) {
-                            MCP_ERROR("Plugin returned null for streaming tool: {}", name);
-                            return nullptr;
-                        }
-                        StreamGenerator generator = reinterpret_cast<StreamGenerator>(const_cast<char *>(raw_result));
-                        {
-                            std::lock_guard<std::mutex> lock(generator_mutex_);
-                            generator_to_plugin_[generator] = plugin.get();
-                        }
-
-                        return generator;
-                    } catch (const std::exception &e) {
-                        MCP_ERROR("Error starting streaming tool '{}': {}", name, e.what());
-                        return nullptr;
-                    }
-                }
-            }
-        }
-        MCP_ERROR("Streaming tool not found or not marked as streaming: {}", name);
-        return nullptr;
+        return std::nullopt;// Not found
     }
 
-    std::pair<StreamGeneratorNext, StreamGeneratorFree> PluginManager::get_stream_functions(StreamGenerator generator) const {
+    PluginManager::StreamFunctions PluginManager::get_stream_functions(StreamGenerator generator) const {
         std::lock_guard<std::mutex> lock(generator_mutex_);
         auto it = generator_to_plugin_.find(generator);
         if (it != generator_to_plugin_.end()) {
             Plugin *plugin = it->second;
             StreamGeneratorNext next_func = plugin->get_stream_next ? plugin->get_stream_next() : nullptr;
             StreamGeneratorFree free_func = plugin->get_stream_free ? plugin->get_stream_free() : nullptr;
-            return {next_func, free_func};
+            return {next_func, free_func, {0, nullptr, nullptr, nullptr}};
         }
-        return {nullptr, nullptr};
+        // Return error if plugin not found
+        MCPError error = {
+                -1,
+                "Plugin not found for generator",
+                nullptr,
+                "PluginManager::get_stream_functions"};
+        return {nullptr, nullptr, error};
     }
 
+    StreamGenerator PluginManager::start_streaming_tool(const std::string &name, const nlohmann::json &args, MCPError *out_error) {
+        // Initialize output error
+        if (out_error) {
+            out_error->code = 0;
+            out_error->message = nullptr;
+        }
+
+        for (const auto &[plugin_name, plugin]: plugins_) {
+            for (const auto &tool: plugin->tool_list) {
+                if (tool.name && std::string(tool.name) == name && tool.is_streaming) {
+                    try {
+                        std::string args_json = args.dump();
+                        MCPError error = {0, nullptr, nullptr, nullptr};
+                        const char *raw_result = plugin->call_tool(name.c_str(), args_json.c_str(), &error);
+
+                        // Check plugin returned error
+                        if (error.code != 0) {
+                            if (out_error) {
+                                *out_error = error;
+                            }
+                            return nullptr;
+                        }
+
+                        if (!raw_result) {
+                            if (out_error) {
+                                out_error->code = -32603;// INTERNAL_ERROR
+                                out_error->message = "Plugin returned null for streaming tool";
+                            }
+                            return nullptr;
+                        }
+
+                        StreamGenerator generator = reinterpret_cast<StreamGenerator>(const_cast<char *>(raw_result));
+                        {
+                            std::lock_guard<std::mutex> lock(generator_mutex_);
+                            generator_to_plugin_[generator] = plugin.get();
+                        }
+                        return generator;
+                    } catch (const std::exception &e) {
+                        if (out_error) {
+                            out_error->code = -32603;// INTERNAL_ERROR
+                            out_error->message = e.what();
+                        }
+                        return nullptr;
+                    }
+                }
+            }
+        }
+
+        if (out_error) {
+            out_error->code = -32601;// METHOD_NOT_FOUND
+            out_error->message = "Streaming tool not found or not marked as streaming";
+        }
+        return nullptr;
+    }
 }// namespace mcp::business

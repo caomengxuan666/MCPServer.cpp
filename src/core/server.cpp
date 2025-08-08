@@ -2,6 +2,7 @@
 #include "business/plugin_manager.h"
 #include "business/tool_registry.h"
 #include "core/logger.h"
+#include "executable_path.h"
 #include "protocol/tool.h"
 #include <thread>
 
@@ -18,7 +19,9 @@ namespace mcp::core {
 
     MCPserver::Builder &MCPserver::Builder::with_plugin_path(const std::string &path) {
         // Store the plugin directory path for later loading
-        server_->plugin_directories_.push_back(path);
+        // find the executable directory first
+        auto abosulute_path = getExecutableDirectory() + "/" + path;
+        server_->plugin_directories_.push_back(abosulute_path);
         return *this;
     }
 

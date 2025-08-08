@@ -16,7 +16,6 @@
 #include <array>
 #include <chrono>
 #include <cstdlib>
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <nlohmann/json.hpp>
@@ -31,13 +30,21 @@ static std::vector<ToolInfo> g_tools;
  * @return JSON string containing current time
  */
 static std::string get_current_time() {
-    auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
+    try {
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
 
-    // Return raw business data without RPC wrapper
-    return nlohmann::json{{"current_time", ss.str()}}.dump();
+        // Return raw business data without RPC wrapper
+        return nlohmann::json{{"current_time", ss.str()}}.dump();
+    } catch (const std::exception& e) {
+        // Return custom error code and message
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Failed to get current time: " + std::string(e.what())}}}}
+                .dump();
+    }
 }
 
 /**
@@ -45,15 +52,23 @@ static std::string get_current_time() {
  * @return JSON string containing system info
  */
 static std::string get_system_info() {
+    try {
 #ifdef _WIN32
-    std::string os = "Windows";
+        std::string os = "Windows";
 #else
-    std::string os = "Unix-like";
+        std::string os = "Unix-like";
 #endif
-    std::string arch = sizeof(void *) == 8 ? "x86_64" : "x86";
+        std::string arch = sizeof(void *) == 8 ? "x86_64" : "x86";
 
-    // Return raw business data without RPC wrapper
-    return nlohmann::json{{"os", os}, {"arch", arch}}.dump();
+        // Return raw business data without RPC wrapper
+        return nlohmann::json{{"os", os}, {"arch", arch}}.dump();
+    } catch (const std::exception& e) {
+        // Return custom error code and message
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Failed to get system info: " + std::string(e.what())}}}}
+                .dump();
+    }
 }
 
 /**
@@ -62,34 +77,50 @@ static std::string get_system_info() {
  * @return JSON string containing file list or error message
  */
 static std::string list_files(const std::string &path) {
-    // Prevent path traversal attacks
-    if (path.find("..") != std::string::npos) {
-        return nlohmann::json{{"error", "Path traversal is not allowed"}}.dump();
-    }
+    try {
+        // Prevent path traversal attacks
+        if (path.find("..") != std::string::npos) {
+            // Return custom error code and message
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "Path traversal is not allowed"}}}}
+                    .dump();
+        }
 
-    std::array<char, 128> buffer;
-    std::string result;
+        std::array<char, 128> buffer;
+        std::string result;
 
-    // Platform-specific directory listing command
+        // Platform-specific directory listing command
 #ifdef _WIN32
-    std::string cmd = "dir \"" + path + "\" /b";// Windows: bare format listing
+        std::string cmd = "dir \"" + path + "\" /b";// Windows: bare format listing
 #else
-    std::string cmd = "ls \"" + path + "\"";// Unix: simple listing
+        std::string cmd = "ls \"" + path + "\"";// Unix: simple listing
 #endif
 
-    // Execute command and capture output
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
-    if (!pipe) {
-        return nlohmann::json{{"error", "Failed to list files: Pipe creation failed"}}.dump();
-    }
+        // Execute command and capture output
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+        if (!pipe) {
+            // Return custom error code and message
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "Failed to list files: Pipe creation failed"}}}}
+                    .dump();
+        }
 
-    // Read command output
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
+        // Read command output
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            result += buffer.data();
+        }
 
-    // Return raw business data
-    return nlohmann::json{{"files", result}}.dump();
+        // Return raw business data
+        return nlohmann::json{{"files", result}}.dump();
+    } catch (const std::exception& e) {
+        // Return custom error code and message
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Failed to list files: " + std::string(e.what())}}}}
+                .dump();
+    }
 }
 
 /**
@@ -98,40 +129,56 @@ static std::string list_files(const std::string &path) {
  * @return JSON string containing ping results
  */
 static std::string ping_host(const std::string &host) {
-    // Validate host name format
-    if (!std::all_of(host.begin(), host.end(), [](char c) {
-            return std::isalnum(c) || c == '.' || c == '-';
-        })) {
-        return nlohmann::json{{"error", "Invalid host name format"}}.dump();
-    }
+    try {
+        // Validate host name format
+        if (!std::all_of(host.begin(), host.end(), [](char c) {
+                return std::isalnum(c) || c == '.' || c == '-';
+            })) {
+            // Return custom error code and message
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "Invalid host name format"}}}}
+                    .dump();
+        }
 
-    std::array<char, 128> buffer;
-    std::string result;
+        std::array<char, 128> buffer;
+        std::string result;
 
-    // Platform-specific ping command
+        // Platform-specific ping command
 #ifdef _WIN32
-    std::string cmd = "ping -n 1 -w 1000 " + host;// Windows: 1 packet, 1s timeout
+        std::string cmd = "ping -n 1 -w 1000 " + host;// Windows: 1 packet, 1s timeout
 #else
-    std::string cmd = "ping -c 1 -W 1 " + host;// Unix: 1 packet, 1s timeout
+        std::string cmd = "ping -c 1 -W 1 " + host;// Unix: 1 packet, 1s timeout
 #endif
 
-    // Execute ping command
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
-    if (!pipe) {
-        return nlohmann::json{{"error", "Ping command failed: Pipe creation failed"}}.dump();
+        // Execute ping command
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+        if (!pipe) {
+            // Return custom error code and message
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "Ping command failed: Pipe creation failed"}}}}
+                    .dump();
+        }
+
+        // Read ping output
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            result += buffer.data();
+        }
+
+        // Determine success status from output
+        bool success = result.find("TTL=") != std::string::npos ||
+                       result.find("time=") != std::string::npos;
+
+        // Return raw business data
+        return nlohmann::json{{"output", result}, {"success", success}}.dump();
+    } catch (const std::exception& e) {
+        // Return custom error code and message
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Ping command failed: " + std::string(e.what())}}}}
+                .dump();
     }
-
-    // Read ping output
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
-
-    // Determine success status from output
-    bool success = result.find("TTL=") != std::string::npos ||
-                   result.find("time=") != std::string::npos;
-
-    // Return raw business data
-    return nlohmann::json{{"output", result}, {"success", success}}.dump();
 }
 
 /**
@@ -139,7 +186,15 @@ static std::string ping_host(const std::string &host) {
  * @return JSON string containing connectivity results
  */
 static std::string check_connectivity() {
-    return ping_host("8.8.8.8");// Use Google DNS as test target
+    try {
+        return ping_host("8.8.8.8");// Use Google DNS as test target
+    } catch (const std::exception& e) {
+        // Return custom error code and message
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Failed to check connectivity: " + std::string(e.what())}}}}
+                .dump();
+    }
 }
 
 /**
@@ -147,29 +202,46 @@ static std::string check_connectivity() {
  * @return JSON string containing public IP or error
  */
 static std::string get_public_ip() {
-    std::array<char, 128> buffer;
-    std::string ip;
+    try {
+        std::array<char, 128> buffer;
+        std::string ip;
 
-    // Command to retrieve public IP via API
-    std::string cmd = "curl -s https://api.ipify.org";
+#ifdef _WIN32
+        std::string cmd = "curl -s https://api.ipify.org";
+#else
+        std::string cmd = "curl -s https://api.ipify.org";
+#endif
 
-    // Execute curl command
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
-    if (!pipe) {
-        return nlohmann::json{{"error", "Failed to execute curl command"}}.dump();
-    }
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+        if (!pipe) {
+            // Return custom error code and message
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "curl command not found"}}}}
+                    .dump();
+        }
 
-    // Read IP address from response
-    if (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        ip = buffer.data();
-        ip.erase(std::remove(ip.begin(), ip.end(), '\n'), ip.end());// Remove newline
-    }
+        if (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            ip = buffer.data();
+            // Remove newline characters
+            ip.erase(std::remove(ip.begin(), ip.end(), '\n'), ip.end());
+        }
 
-    // Validate and return result
-    if (!ip.empty() && ip.find('.') != std::string::npos) {
-        return nlohmann::json{{"public_ip", ip}}.dump();
-    } else {
-        return nlohmann::json{{"error", "Failed to retrieve public IP"}}.dump();
+        if (!ip.empty() && ip.find('.') != std::string::npos) {
+            return nlohmann::json{{"public_ip", ip}}.dump();
+        } else {
+            // Return custom error code and message
+            return nlohmann::json{
+                    {"error", {{"code", -32000},// Custom error code
+                               {"message", "Failed to get public IP"}}}}
+                    .dump();
+        }
+    } catch (const std::exception& e) {
+        // Return custom error code and message
+        return nlohmann::json{
+                {"error", {{"code", -32000},// Custom error code
+                           {"message", "Failed to get public IP: " + std::string(e.what())}}}}
+                .dump();
     }
 }
 
@@ -206,7 +278,7 @@ struct LogFileGenerator {
  * @param result_json Output parameter for JSON result
  * @return 0 on success, 1 on completion/error
  */
-static int log_file_next(StreamGenerator generator, const char **result_json) {
+static int log_file_next(StreamGenerator generator, const char **result_json, MCPError *error) {
     if (!generator) {
         static thread_local std::string buffer = nlohmann::json{{"error", "Invalid generator pointer"}}.dump();
         *result_json = buffer.c_str();
@@ -279,56 +351,76 @@ extern "C" MCP_API StreamGeneratorFree get_stream_free() {
  * @param args_json JSON string containing tool arguments
  * @return JSON string with tool results or error
  */
-extern "C" MCP_API const char *call_tool(const char *name, const char *args_json) {
+extern "C" MCP_API const char *call_tool(const char *name, const char *args_json, MCPError *error) {
     try {
         auto args = nlohmann::json::parse(args_json);
         std::string tool_name = name;
 
-        // Route to appropriate tool implementation
         if (tool_name == "get_current_time") {
-            return strdup(get_current_time().c_str());
+            std::string result = get_current_time();
+            return _strdup(result.c_str());
         } else if (tool_name == "get_system_info") {
-            return strdup(get_system_info().c_str());
+            std::string result = get_system_info();
+            return _strdup(result.c_str());
         } else if (tool_name == "list_files") {
             std::string path = args.value("path", "");
             if (path.empty()) {
-                return strdup(nlohmann::json{{"error", "Missing 'path' parameter"}}.dump().c_str());
+                error->code = mcp::protocol::error_code::INVALID_TOOL_INPUT;
+                error->message = "Missing 'path' parameter";
+                return nullptr;
             }
-            return strdup(list_files(path).c_str());
+            std::string result = list_files(path);
+            return _strdup(result.c_str());
         } else if (tool_name == "ping_host") {
             std::string host = args.value("host", "");
             if (host.empty()) {
-                return strdup(nlohmann::json{{"error", "Missing 'host' parameter"}}.dump().c_str());
+                error->code = mcp::protocol::error_code::INVALID_TOOL_INPUT;
+                error->message = "Missing 'host' parameter";
+                return nullptr;
             }
-            return strdup(ping_host(host).c_str());
+            std::string result = ping_host(host);
+            return _strdup(result.c_str());
         } else if (tool_name == "check_connectivity") {
-            return strdup(check_connectivity().c_str());
+            std::string result = check_connectivity();
+            return _strdup(result.c_str());
         } else if (tool_name == "get_public_ip") {
-            return strdup(get_public_ip().c_str());
+            std::string result = get_public_ip();
+            auto result_json = nlohmann::json::parse(result);
+
+            // Check if there is an error field, if so, return the error directly
+            if (result_json.contains("error")) {
+                error->code = result_json["error"]["code"];
+                error->message = strdup(result_json["error"]["message"].get<std::string>().c_str());
+                return nullptr;// Return nullptr to indicate an error
+            }
+
+            return _strdup(result.c_str());// Return result on success
         } else if (tool_name == "stream_log_file") {
             std::string path = args.value("path", "");
             if (path.empty()) {
-                return strdup(nlohmann::json{{"error", "Missing 'path' parameter"}}.dump().c_str());
+                error->code = mcp::protocol::error_code::INVALID_TOOL_INPUT;
+                error->message = "Missing 'path' parameter";
+                return nullptr;
             }
-
-            if (!std::filesystem::exists(path)) {
-                return strdup(nlohmann::json{{"error", "File not found"}}.dump().c_str());
-            }
-
-            // Initialize log file generator
-            LogFileGenerator *gen = new LogFileGenerator();
+            auto *gen = new LogFileGenerator();
             gen->file.open(path);
-
             if (!gen->file.is_open()) {
-                gen->error = nlohmann::json{{"error", "Failed to open file"}}.dump();
+                gen->error = nlohmann::json{
+                        {"jsonrpc", "2.0"},
+                        {"method", "error"},
+                        {"params", nlohmann::json{{"message", "Failed to open log file: " + path}}}}
+                                     .dump();
             }
             return reinterpret_cast<const char *>(gen);
         } else {
-            return strdup(nlohmann::json{{"error", "Unknown tool: " + tool_name}}.dump().c_str());
+            error->code = mcp::protocol::error_code::TOOL_NOT_FOUND;
+            error->message = "Unknown tool";
+            return nullptr;
         }
     } catch (const std::exception &e) {
-        // Handle JSON parsing errors
-        return strdup(nlohmann::json{{"error", "Execution failed: " + std::string(e.what())}}.dump().c_str());
+        error->code = mcp::protocol::error_code::INTERNAL_ERROR;
+        error->message = e.what();
+        return nullptr;
     }
 }
 

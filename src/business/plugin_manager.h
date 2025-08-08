@@ -1,6 +1,5 @@
 #pragma once
 
-// 确保 ASIO 在 Windows 上正确配置 WinSock
 #if defined(_WIN32) && !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x0601
 #endif
@@ -57,9 +56,15 @@ namespace mcp::business {
 
         std::optional<std::string> find_plugin_name_for_tool(const std::string &tool_name) const;
 
-        StreamGenerator start_streaming_tool(const std::string &name, const nlohmann::json &args);
+        StreamGenerator start_streaming_tool(const std::string &name, const nlohmann::json &args, MCPError *out_error = nullptr);
 
-        std::pair<StreamGeneratorNext, StreamGeneratorFree> get_stream_functions(StreamGenerator generator) const;
+        struct StreamFunctions {
+            StreamGeneratorNext next = nullptr;
+            StreamGeneratorFree free = nullptr;
+            MCPError error = {0, nullptr, nullptr, nullptr};
+        };
+
+        StreamFunctions get_stream_functions(StreamGenerator generator) const;
 
         void set_current_plugin(Plugin *plugin) { current_plugin_ = plugin; }
 
