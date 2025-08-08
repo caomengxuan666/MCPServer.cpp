@@ -84,13 +84,25 @@ set(MI_BUILD_EXAMPLES OFF CACHE BOOL "Build mimalloc examples" FORCE)
 set(DISABLE_SYSTEM_MIMALLOC ON CACHE BOOL "Disable system mimalloc")
 
 # Link all required libraries to the main executable
-target_link_libraries(mcp-server++ PRIVATE
-    mcp_transport
-    mcp_protocol
-    mcp_business
-    mcp_core
-    mcp_plugin_sdk
-)
+if(UNIX)
+    target_link_libraries(mcp-server++ PRIVATE
+        -Wl,--start-group
+        mcp_business
+        mcp_core
+        mcp_transport
+        mcp_protocol
+        -Wl,--end-group
+        mcp_plugin_sdk
+    )
+else()
+    target_link_libraries(mcp-server++ PRIVATE
+        mcp_business
+        mcp_core
+        mcp_transport
+        mcp_protocol
+        mcp_plugin_sdk
+    )
+endif()
 
 # testing
 option(BUILD_TESTS "Build tests" ON)
