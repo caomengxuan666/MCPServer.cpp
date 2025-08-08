@@ -1,5 +1,3 @@
-# This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake Multi-Platform CI
 
 on:
@@ -21,14 +19,19 @@ jobs:
             c_compiler: cl
             cpp_compiler: cl
             generator: "Visual Studio 17 2022"
+            is_windows: true
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
             generator: "Unix Makefiles"
+            is_windows: false
+            extra_flags: "-DCMAKE_CXX_FLAGS=-fms-extensions -Dstrdup=_strdup"
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
             generator: "Unix Makefiles"
+            is_windows: false
+            extra_flags: "-DCMAKE_CXX_FLAGS=-fms-extensions -Dstrdup=_strdup"
 
     steps:
       - uses: actions/checkout@v4
@@ -36,26 +39,54 @@ jobs:
           submodules: "recursive"
 
       - name: Setup Linux Dependencies
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.is_windows == false
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake
 
-      - name: Configure CMake
+      - name: Configure CMake (Windows)
+        if: matrix.is_windows
+        shell: cmd
+        run: |
+          cmake -B build ^
+            -G "${{ matrix.generator }}" ^
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} ^
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+
+      - name: Configure CMake (Linux)
+        if: matrix.is_windows == false
         shell: bash
         run: |
           cmake -B build \
             -G "${{ matrix.generator }}" \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            ${{ matrix.extra_flags }}
 
-      - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }} --parallel
-
-      - name: Test
-        working-directory: build
+      - name: Build (Windows)
+        if: matrix.is_windows
+        shell: cmd
         run: |
-          ctest --build-config ${{ matrix.build_type }} \
-            --output-on-failure \
-            --parallel $(nproc)
+          cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Build (Linux)
+        if: matrix.is_windows == false
+        shell: bash
+        run: |
+          cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Test (Windows)
+        if: matrix.is_windows
+        working-directory: build
+        shell: cmd
+        run: |
+          ctest --build-config ${{ matrix.build_type }} --output-on-failure --parallel 4
+
+      - name: Test (Linux)
+        if: matrix.is_windows == false
+        working-directory: build
+        shell: bash
+        run: |
+          ctest --build-config ${{ matrix.build_type }} --output-on-failure --parallel $(nproc)

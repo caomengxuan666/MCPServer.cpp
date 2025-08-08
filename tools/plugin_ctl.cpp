@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         ofs << "        if (tool_name == \"" << argv[1] << "\") {\n";
         ofs << "            // Example implementation - replace with your actual logic\n";
         ofs << "            std::string result = nlohmann::json{{\"result\", \"Hello from " << argv[1] << "\"}}.dump();\n";
-        ofs << "            return _strdup(result.c_str());\n";
+        ofs << "            return strdup(result.c_str());\n";
         ofs << "        }\n\n";
         ofs << "        // For streaming tools, return the generator\n";
         ofs << "        // Example for a streaming tool:\n";
@@ -108,9 +108,9 @@ int main(int argc, char *argv[]) {
         ofs << "        //     // Initialize your generator here\n";
         ofs << "        //     return reinterpret_cast<const char*>(gen);\n";
         ofs << "        // }\n\n";
-        ofs << "        return _strdup((nlohmann::json{{\"error\", \"Unknown tool: \" + tool_name}}.dump()).c_str());\n";
+        ofs << "        return strdup((nlohmann::json{{\"error\", \"Unknown tool: \" + tool_name}}.dump()).c_str());\n";
         ofs << "    } catch (const std::exception &e) {\n";
-        ofs << "        return _strdup((nlohmann::json{{\"error\", e.what()}}.dump()).c_str());\n";
+        ofs << "        return strdup((nlohmann::json{{\"error\", e.what()}}.dump()).c_str());\n";
         ofs << "    }\n";
         ofs << "}\n\n";
         ofs << "extern \"C\" MCP_API void free_result(const char *result) {\n";
