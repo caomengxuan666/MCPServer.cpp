@@ -62,7 +62,7 @@ namespace mcp::transport {
 
         std::array<char, 8192> &get_buffer() { return buffer_; }
 
-        void set_session_id(const std::string &session_id) { session_id_ = session_id; }
+        //void set_session_id(const std::string &session_id) { session_id_ = session_id; }
 
         const std::string &get_session_id() const { return session_id_; }
 

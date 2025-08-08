@@ -9,7 +9,6 @@
 #include "rpc_router.h"
 
 
-
 namespace mcp::business {
 
     using namespace routers;
@@ -20,6 +19,28 @@ namespace mcp::business {
         router_.register_handler("tools/list", handle_tools_list);
         router_.register_handler("tools/call", handle_tools_call);
         router_.register_handler("exit", handle_exit);
+        router_.register_handler("notifications/initialized", [](
+                                                                      const protocol::Request &,
+                                                                      std::shared_ptr<business::ToolRegistry> /*registry*/,
+                                                                      std::shared_ptr<transport::Session>,
+                                                                      const std::string &session_id) {
+            MCP_DEBUG("Received notifications/initialized for session: {}", session_id);
+
+            return protocol::Response{};// return null response for those notofications
+        });
+        router_.register_handler("ping", [](
+                                                 const protocol::Request &req,
+                                                 std::shared_ptr<business::ToolRegistry> /*registry*/,
+                                                 std::shared_ptr<transport::Session> /*session*/,
+                                                 const std::string &session_id) {
+            MCP_DEBUG("Received ping request (session: {})", session_id);
+
+            protocol::Response resp;
+            resp.id = req.id;
+            resp.result = nlohmann::json::object();
+
+            return resp;
+        });
     }
 
     void RequestHandler::handle_request(

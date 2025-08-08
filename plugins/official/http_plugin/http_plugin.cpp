@@ -6,6 +6,7 @@
 #include "tool_info_parser.h"
 #include <cstdlib>
 #include <nlohmann/json.hpp>
+#include <regex>
 
 
 
@@ -14,9 +15,31 @@ static std::vector<ToolInfo> g_tools;
 // Send HTTP GET request
 static std::string http_get(const std::string &url) {
     try {
-        httplib::Client client(url.c_str());
+        // Parse URL to extract scheme, host, port, and path
+        std::regex url_regex(R"(^(https?)://([^/]+)(/.*)?$)");
+        std::smatch url_match;
+        
+        if (!std::regex_match(url, url_match, url_regex)) {
+            return nlohmann::json{
+                    {"error", {{"code", -32000},
+                               {"message", "Invalid URL format"}}}}
+                    .dump();
+        }
+        
+        std::string scheme = url_match[1];
+        std::string host = url_match[2];
+        std::string path = url_match[3];
+        
+        // Default path is "/"
+        if (path.empty()) {
+            path = "/";
+        }
+        
+        // Create client with proper scheme and host
+        std::string client_url = scheme + "://" + host;
+        httplib::Client client(client_url.c_str());
 
-        auto res = client.Get("/");
+        auto res = client.Get(path.c_str());
         if (!res) {
             // Return custom error code and message, consistent with safe_system_plugin
             return nlohmann::json{
@@ -25,11 +48,8 @@ static std::string http_get(const std::string &url) {
                     .dump();
         }
 
-        return nlohmann::json{
-                {"status_code", res->status},
-                {"body", res->body},
-                {"headers", res->headers}}
-                .dump();
+        // Return only the body content to conform to MCP protocol
+        return res->body;
     } catch (const std::exception& e) {
         // Return custom error code and message, consistent with safe_system_plugin
         return nlohmann::json{
@@ -42,9 +62,31 @@ static std::string http_get(const std::string &url) {
 // Send HTTP POST request (application/json)
 static std::string http_post(const std::string &url, const std::string &body) {
     try {
-        httplib::Client client(url.c_str());
+        // Parse URL to extract scheme, host, port, and path
+        std::regex url_regex(R"(^(https?)://([^/]+)(/.*)?$)");
+        std::smatch url_match;
+        
+        if (!std::regex_match(url, url_match, url_regex)) {
+            return nlohmann::json{
+                    {"error", {{"code", -32000},
+                               {"message", "Invalid URL format"}}}}
+                    .dump();
+        }
+        
+        std::string scheme = url_match[1];
+        std::string host = url_match[2];
+        std::string path = url_match[3];
+        
+        // Default path is "/"
+        if (path.empty()) {
+            path = "/";
+        }
+        
+        // Create client with proper scheme and host
+        std::string client_url = scheme + "://" + host;
+        httplib::Client client(client_url.c_str());
 
-        auto res = client.Post("/", body, "application/json");
+        auto res = client.Post(path.c_str(), body, "application/json");
         if (!res) {
             // Return custom error code and message, consistent with safe_system_plugin
             return nlohmann::json{
@@ -53,11 +95,8 @@ static std::string http_post(const std::string &url, const std::string &body) {
                     .dump();
         }
 
-        return nlohmann::json{
-                {"status_code", res->status},
-                {"body", res->body},
-                {"headers", res->headers}}
-                .dump();
+        // Return only the body content to conform to MCP protocol
+        return res->body;
     } catch (const std::exception& e) {
         // Return custom error code and message, consistent with safe_system_plugin
         return nlohmann::json{

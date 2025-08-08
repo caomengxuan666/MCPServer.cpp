@@ -206,12 +206,19 @@ static std::string get_public_ip() {
         std::array<char, 128> buffer;
         std::string ip;
 
+        // In China, you can try some domestic - accessible IP query services,
+        // such as ipip.net. Here we still use curl to get the IP,
+        // and you can also use other domestic - oriented IP query APIs in the future.
 #ifdef _WIN32
-        std::string cmd = "curl -s https://api.ipify.org";
+        // For Windows, the following command can be used to try to get the public IP
+        // You can change the URL to other valid ones, such as curl ipinfo.io
+        std::string cmd = "curl -s myip.ipip.net";
 #else
-        std::string cmd = "curl -s https://api.ipify.org";
+        // For non - Windows systems (like Linux, macOS), the command format is similar
+        std::string cmd = "curl -s myip.ipip.net";
 #endif
 
+        // Use popen to execute the command and get the result
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
         if (!pipe) {
             // Return custom error code and message
@@ -230,14 +237,37 @@ static std::string get_public_ip() {
         if (!ip.empty() && ip.find('.') != std::string::npos) {
             return nlohmann::json{{"public_ip", ip}}.dump();
         } else {
-            // Return custom error code and message
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Failed to get public IP"}}}}
-                    .dump();
+// If the IP is not obtained correctly, return an error message
+// Try to use foreign - accessible IP query services
+#ifdef _WIN32
+            std::string foreign_cmd = "curl -s https://api.ipify.org";
+#else
+            std::string foreign_cmd = "curl -s https://api.ipify.org";
+#endif
+            std::unique_ptr<FILE, decltype(&pclose)> foreign_pipe(popen(foreign_cmd.c_str(), "r"), pclose);
+            if (!foreign_pipe) {
+                return nlohmann::json{
+                        {"error", {{"code", -32000},// Custom error code
+                                   {"message", "curl command not found when trying foreign service"}}}}
+                        .dump();
+            }
+            std::array<char, 128> foreign_buffer;
+            if (fgets(foreign_buffer.data(), foreign_buffer.size(), foreign_pipe.get()) != nullptr) {
+                ip = foreign_buffer.data();
+                ip.erase(std::remove(ip.begin(), ip.end(), '\n'), ip.end());
+            }
+            if (!ip.empty() && ip.find('.') != std::string::npos) {
+                return nlohmann::json{{"public_ip", ip}}.dump();
+            } else {
+                // Return custom error code and message if still failed
+                return nlohmann::json{
+                        {"error", {{"code", -32000},// Custom error code
+                                   {"message", "Failed to get public IP after trying both domestic and foreign services"}}}}
+                        .dump();
+            }
         }
     } catch (const std::exception &e) {
-        // Return custom error code and message
+        // If an exception occurs, return an error message with the exception details
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
                            {"message", "Failed to get public IP: " + std::string(e.what())}}}}

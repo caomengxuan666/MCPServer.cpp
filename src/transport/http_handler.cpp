@@ -1,32 +1,15 @@
 #include "http_handler.h"
 #include "core/logger.h"
+#include "nlohmann/json.hpp"
 #include "session.h"
 #include <algorithm>
 #include <array>
 #include <cctype>
-#include <random>
 #include <sstream>
 
 
 using asio::awaitable;
 using asio::use_awaitable;
-
-namespace {
-    // generate random data for session id
-    static std::string generate_session_id() noexcept {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<uint64_t> dist;
-
-        uint64_t part1 = dist(gen);
-        uint64_t part2 = dist(gen);
-
-        std::stringstream ss;
-        ss << std::hex << std::setw(16) << std::setfill('0') << part1
-           << std::hex << std::setw(16) << std::setfill('0') << part2;
-        return ss.str();
-    }
-}// namespace
 
 namespace mcp::transport {
 
@@ -136,19 +119,33 @@ namespace mcp::transport {
         co_return;
     }
 
-    // Send HTTP response (unique implementation, remove duplicate definitions)
-    awaitable<void> HttpHandler::send_http_response(
+    /**
+    * @brief Sends an HTTP response to the client over the specified session.
+    * 
+    * This function constructs a valid HTTP response with appropriate headers,
+    * handles connection persistence based on client hints, and manages the 
+    * underlying TCP connection lifecycle. Strictly follows MCP protocol requirements.
+    * 
+    * @param session Shared pointer to the active Session object
+    * @param body The response body content (typically JSON for requests, empty for notifications)
+    * @param status_code HTTP status code (e.g., 200 for OK, 202 for Accepted notifications)
+    * @return asio::awaitable<void> Awaitable task for async operation
+    */
+    asio::awaitable<void> HttpHandler::send_http_response(
             std::shared_ptr<Session> session,
             const std::string &body,
             int status_code) {
-        // Status description string
+        // Map status codes to human-readable descriptions
         std::string status_str;
         switch (status_code) {
             case 200:
                 status_str = "OK";
                 break;
             case 202:
-                status_str = "Accepted";
+                status_str = "Accepted";// For notifications (no response body)
+                break;
+            case 204:
+                status_str = "No Content";// For DELETE requests
                 break;
             case 400:
                 status_str = "Bad Request";
@@ -163,25 +160,65 @@ namespace mcp::transport {
                 status_str = "Internal Server Error";
                 break;
             default:
-                status_str = "Unknown";
+                status_str = "Unknown Status";
                 break;
         }
 
-        // Build response content
+        // Build HTTP response headers
         std::ostringstream oss;
         oss << "HTTP/1.1 " << status_code << " " << status_str << "\r\n";
-        oss << "Content-Type: application/json\r\n";
-        oss << "Content-Length: " << body.size() << "\r\n";
-        oss << "Connection: close\r\n";// Force close connection for non-streaming response
-        oss << "\r\n";                 // End of headers marker
-        oss << body;
 
-        // Clean buffer before sending response
+        // Handle content type and length based on status code (MCP protocol requirement)
+        if (status_code == 202 || status_code == 204) {
+            // Notifications or no-content responses: no body, no JSON type
+            oss << "Content-Length: 0\r\n";// Explicit empty content
+        } else {
+            // Regular responses with body: JSON content type
+            oss << "Content-Type: application/json\r\n";
+            oss << "Content-Length: " << body.size() << "\r\n";
+        }
+
+        // Determine connection persistence strategy
+        const std::string client_connection = get_header_value(session->get_headers(), "Connection");
+        bool keep_alive = true;
+
+        if (!client_connection.empty()) {
+            // Respect client's connection preference if specified
+            keep_alive = (strcasecmp(client_connection.c_str(), "keep-alive") == 0);
+        }
+
+        // Set connection header and keep-alive parameters
+        if (keep_alive) {
+            oss << "Connection: keep-alive\r\n";
+            oss << "Keep-Alive: timeout=300, max=100\r\n";// 5-minute timeout, max 100 requests
+        } else {
+            oss << "Connection: close\r\n";
+        }
+
+        // End of headers marker (CRLF)
+        oss << "\r\n";
+
+        // Append response body only for non-202/204 status codes
+        if (status_code != 202 && status_code != 204) {
+            oss << body;
+        }
+
+        // Ensure buffer is clean before sending
         co_await discard_existing_buffer(session);
 
-        // Send response and close session
-        co_await session->write(oss.str());
-        session->close();
+        // Send the complete response
+        const std::string response = oss.str();
+        co_await session->write(response);
+        MCP_DEBUG("Sent HTTP {} response (Session: {})", status_code, session->get_session_id());
+
+        // Close connection only if explicitly requested
+        if (!keep_alive) {
+            MCP_DEBUG("Closing connection as requested (Session: {})", session->get_session_id());
+            session->close();
+        } else {
+            MCP_DEBUG("Keeping connection alive (Session: {})", session->get_session_id());
+        }
+
         co_return;
     }
 
@@ -230,18 +267,10 @@ namespace mcp::transport {
                 co_await send_http_response(session, R"({"error":"Not Found"})", 404);
                 co_return;
             }
-            // Get session ID (from header or generate)
-            std::string session_id = get_header_value(req.headers, "Mcp-Session-Id");
 
-            // first time: generate a new session ID
-            if (session_id.empty()) {
-                session_id = generate_session_id();
-                MCP_DEBUG("New session created: {}", session_id);
-                session->set_session_id(session_id);
-            } else {
-                MCP_DEBUG("Reconnecting to session: {}", session_id);
-                session->set_session_id(session_id);
-            }
+            std::string session_id = session->get_session_id();
+            MCP_DEBUG("Using session from TCP connection: {}", session_id);
+            MCP_DEBUG("Request method: {}, target: {}", req.method, req.target);
 
             // Handle GET request (SSE connection initialization)
             if (req.method == "GET") {
@@ -258,14 +287,30 @@ namespace mcp::transport {
             else if (req.method == "POST") {
                 std::string accept_header = get_header_value(req.headers, "Accept");
                 session->set_accept_header(accept_header);
-                on_message_(req.body, session, session_id);// Delegate to business layer
+
+                // Parse JSON-RPC request to determine if it's a notification (no id)
+                bool is_notification = false;
+                try {
+                    nlohmann::json rpc_request = nlohmann::json::parse(req.body);
+                    is_notification = !rpc_request.contains("id");// Notification has no id
+                } catch (...) {
+                    // Parsing failed, handle as regular request
+                }
+
+                // Business layer processes the message
+                on_message_(req.body, session, session_id);
+
+                // Core fix: send 202 response for notifications
+                if (is_notification) {
+                    MCP_DEBUG("Sending 202 Accepted for notification (Session: {})", session->get_session_id());
+                    co_await send_http_response(session, "", 202);// Empty body, 202 status code
+                }
+
                 co_return;
             }
             // Handle DELETE request (end session)
             else if (req.method == "DELETE") {
-                if (!session_id.empty()) {
-                    MCP_INFO("Session terminated: {}", session_id);
-                }
+                MCP_INFO("Session terminated: {}", session_id);
                 co_await session->write("HTTP/1.1 204 No Content\r\n\r\n");
                 session->close();
                 co_return;

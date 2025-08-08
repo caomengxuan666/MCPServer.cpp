@@ -531,12 +531,28 @@ namespace mcp::routers {
                     return resp;
                 }
 
-                // when successully parsed
-                nlohmann::json content_array = nlohmann::json::array();
-                content_array.push_back(nlohmann::json{
-                        {"type", "text"},
-                        {"text", *result}});
-                resp.result = nlohmann::json{{"content", content_array}};
+                // Check if the result is already in the correct MCP format with content array
+                if (result->contains("content") && (*result)["content"].is_array()) {
+                    // Already in correct format, use directly
+                    resp.result = *result;
+                } else {
+                    // Convert to MCP format
+                    nlohmann::json content_array = nlohmann::json::array();
+                    
+                    // Check if result is a string (text content) or object
+                    if (result->is_string()) {
+                        // Pure text content from plugin
+                        content_array.push_back({{"type", "text"}, {"text", result->get<std::string>()}});
+                    } else if (result->is_object() && result->contains("text")) {
+                        // Object with text field
+                        content_array.push_back({{"type", "text"}, {"text", (*result)["text"]}});
+                    } else {
+                        // Other JSON content
+                        content_array.push_back({{"type", "text"}, {"text", result->dump()}});
+                    }
+                    
+                    resp.result = nlohmann::json{{"content", content_array}};
+                }
                 return resp;
             } catch (const std::exception &e) {
                 resp.error = protocol::Error{
