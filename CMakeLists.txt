@@ -62,12 +62,13 @@ if (MSVC)
     target_compile_options(mcp-server++ PRIVATE /W4 /permissive-)
 else ()
     target_compile_options(mcp-server++ PRIVATE -Wall -Wextra -O3)
-endif ()
-
-target_compile_options(mcp-server++ PRIVATE
+    target_compile_options(mcp-server++ PRIVATE
         /W4 /permissive-
         /utf-8
 )
+endif ()
+
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
