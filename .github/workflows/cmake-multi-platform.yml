@@ -20,19 +20,16 @@ jobs:
             cpp_compiler: cl
             generator: "Visual Studio 17 2022"
             is_windows: true
-            extra_flags: ""
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
             generator: "Unix Makefiles"
             is_windows: false
-            extra_flags: '-DCMAKE_CXX_FLAGS=''-fPIC -fms-extensions'' -Dstrdup=_strdup -DMCP_API=__attribute__((visibility("default")))'
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
             generator: "Unix Makefiles"
             is_windows: false
-            extra_flags: '-DCMAKE_CXX_FLAGS=''-fPIC'' -DMCP_API=__attribute__((visibility("default")))'
 
     steps:
       - uses: actions/checkout@v4
@@ -53,8 +50,7 @@ jobs:
             -G "${{ matrix.generator }}" ^
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
             -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} ^
-            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} ^
-            ${{ matrix.extra_flags }}
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
 
       - name: Configure CMake (Linux)
         if: matrix.is_windows == false
@@ -66,7 +62,8 @@ jobs:
             -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
             -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-            ${{ matrix.extra_flags }}
+            -DCMAKE_CXX_FLAGS="-fPIC -fms-extensions" \
+            -Dstrdup=_strdup
 
       - name: Build (Windows)
         if: matrix.is_windows
