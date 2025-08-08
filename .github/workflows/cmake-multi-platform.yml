@@ -63,7 +63,8 @@ jobs:
             -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
             -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
             -DCMAKE_CXX_FLAGS="-fPIC -fms-extensions" \
-            -Dstrdup=_strdup
+            -Dstrdup=_strdup                          \
+            -DCMAKE_CXX_FLAGS="-fPIC -fvisibility=default"
 
       - name: Build (Windows)
         if: matrix.is_windows
