@@ -26,13 +26,13 @@ jobs:
             cpp_compiler: g++
             generator: "Unix Makefiles"
             is_windows: false
-            extra_flags: '-DCMAKE_CXX_FLAGS=''-fPIC -fms-extensions -Dstrdup=_strdup -DMCP_API=__attribute__((visibility("default")))'''
+            extra_flags: '-DCMAKE_CXX_FLAGS=''-fPIC -fms-extensions'' -Dstrdup=_strdup -DMCP_API=__attribute__((visibility("default")))'
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
             generator: "Unix Makefiles"
             is_windows: false
-            extra_flags: '-DCMAKE_CXX_FLAGS=''-fPIC -fms-extensions -Dstrdup=_strdup -DMCP_API=__attribute__((visibility("default")))'''
+            extra_flags: '-DCMAKE_CXX_FLAGS=''-fPIC'' -DMCP_API=__attribute__((visibility("default")))'
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
         if: matrix.is_windows == false
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake
+          sudo apt-get install -y build-essential cmake clang
 
       - name: Configure CMake (Windows)
         if: matrix.is_windows
