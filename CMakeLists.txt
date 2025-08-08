@@ -16,21 +16,22 @@ set(PROJECT_VERSION_TWEAK ${${PROJECT_NAME}_VERSION_TWEAK} CACHE STRING "Tweak v
 set(PROJECT_VERSION_SUFFIX "" CACHE STRING "Version suffix (e.g., -beta, -rc1)")
 
 set(PROJECT_FULL_VERSION
-        "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"
+    "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"
 )
-if (PROJECT_VERSION_TWEAK GREATER 0)
+
+if(PROJECT_VERSION_TWEAK GREATER 0)
     set(PROJECT_FULL_VERSION "${PROJECT_FULL_VERSION}.${PROJECT_VERSION_TWEAK}")
-endif ()
-if (PROJECT_VERSION_SUFFIX)
+endif()
+
+if(PROJECT_VERSION_SUFFIX)
     set(PROJECT_FULL_VERSION "${PROJECT_FULL_VERSION}${PROJECT_VERSION_SUFFIX}")
-endif ()
+endif()
 
 string(TIMESTAMP CMAKE_BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S" UTC)
 
 message(STATUS "Building ${PROJECT_NAME} version: ${PROJECT_FULL_VERSION}")
 
 include_directories(${CMAKE_BINARY_DIR}/version)
-
 
 add_subdirectory(version)
 
@@ -39,36 +40,35 @@ add_executable(mcp-server++ src/main.cpp)
 
 add_compile_definitions(NOMINMAX)
 add_compile_definitions(WIN32_LEAN_AND_MEAN)
+
 # header directories
 target_include_directories(mcp-server++ PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/spdlog/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/plugins
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/spdlog/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/plugins
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/asio/asio/include)
 
-if (WIN32)
+if(WIN32)
     list(APPEND LINKED_LIBRARIES mimalloc-static)
-else ()
+else()
     list(APPEND LINKED_LIBRARIES mimalloc)
-endif ()
+endif()
 
 # link mimalloc
-#target_link_libraries(mcp-server++ PRIVATE ${LINKED_LIBRARIES})
-
-if (MSVC)
-    target_compile_options(mcp-server++ PRIVATE /W4 /permissive-)
-else ()
-    target_compile_options(mcp-server++ PRIVATE -Wall -Wextra -O3)
-    target_compile_options(mcp-server++ PRIVATE
-        /W4 /permissive-
-        /utf-8
-)
-endif ()
-
-
+# target_link_libraries(mcp-server++ PRIVATE ${LINKED_LIBRARIES})
+if(WIN32)
+    if(MSVC)
+        target_compile_options(mcp-server++ PRIVATE
+            /W4 /permissive-
+            /utf-8
+            else()
+            target_compile_options(mcp-server++ PRIVATE -Wall -Wextra -O3)
+        )
+    endif()
+endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -81,28 +81,29 @@ add_subdirectory(tools)
 set(MI_BUILD_TESTS OFF CACHE BOOL "Build mimalloc tests" FORCE)
 set(MI_BUILD_EXAMPLES OFF CACHE BOOL "Build mimalloc examples" FORCE)
 
-
 set(DISABLE_SYSTEM_MIMALLOC ON CACHE BOOL "Disable system mimalloc")
 
 # Link all required libraries to the main executable
 target_link_libraries(mcp-server++ PRIVATE
-        mcp_business
-        mcp_transport
-        mcp_protocol
-        mcp_core
-        mcp_plugin_sdk
+    mcp_business
+    mcp_transport
+    mcp_protocol
+    mcp_core
+    mcp_plugin_sdk
 )
 
 # testing
 option(BUILD_TESTS "Build tests" ON)
-if (BUILD_TESTS)
+
+if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(third_party/googletest)
     add_subdirectory(tests)
-endif ()
+endif()
 
 # example
 option(BUILD_EXAMPLES "Build examples" ON)
-if (BUILD_EXAMPLES)
+
+if(BUILD_EXAMPLES)
     add_subdirectory(examples)
-endif ()
+endif()
