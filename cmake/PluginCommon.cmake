@@ -62,6 +62,8 @@ function(configure_plugin plugin_name src_files)
 
     if(WIN32)
         set_target_properties(${plugin_name} PROPERTIES SUFFIX ".dll")
+    else()
+        set_target_properties(${plugin_name} PROPERTIES SUFFIX ".so")
     endif()
 
     # Install the plugin to bin/plugins (always install plugins)
