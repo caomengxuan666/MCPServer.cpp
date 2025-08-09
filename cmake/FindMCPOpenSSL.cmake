@@ -12,13 +12,22 @@
 include_guard(GLOBAL)
 
 # --- Phase 1: Primary detection via find_package ---
-find_package(OpenSSL QUIET)
+#find_package(OpenSSL QUIET)
 
-if(OPENSSL_FOUND)
-    message(STATUS "Found system OpenSSL: ${OPENSSL_VERSION}")
-    add_library(MCP::OpenSSL INTERFACE IMPORTED)
-    target_link_libraries(MCP::OpenSSL INTERFACE OpenSSL::SSL OpenSSL::Crypto)
-    return()
+#if(OPENSSL_FOUND)
+#    message(STATUS "Found system OpenSSL: ${OPENSSL_VERSION}")
+#    add_library(MCP::OpenSSL INTERFACE IMPORTED)
+#    target_link_libraries(MCP::OpenSSL INTERFACE OpenSSL::SSL OpenSSL::Crypto)
+#    return()
+#endif()
+# we no more use system openssl,because the version 1.1 in the github workflow is too old
+# instead,we use the openssl which version is above 3.
+if(UNIX)
+  find_package(OpenSSL QUIET)
+  message(STATUS: "Found system OpenSSL :${OPENSSL_VERSION}")
+  add_library(MCP::OpenSSL INTERFACE IMPORTED)
+  target_link_libraries(MCP::OpenSSL INTERFACE OpenSSL::SSL OpenSSL::Crypto)
+  return()
 endif()
 
 # --- Phase 2: Windows-specific fallback to local libraries ---

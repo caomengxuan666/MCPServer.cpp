@@ -10,3 +10,4 @@ mcp-server.log
 /out 
 /.vs
 checks.json
+/certs

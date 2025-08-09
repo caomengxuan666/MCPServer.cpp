@@ -5,14 +5,16 @@
 
 
 // OpenSSL includes
+#ifdef _WIN32
 #include <openssl/applink.c>
+#endif
+
 #include <openssl/bn.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
-
 
 #ifdef _WIN32
 #include <direct.h>
@@ -145,8 +147,9 @@ bool save_certificate(X509 *x509, const std::string &filename) {
 }
 
 int main(int argc, char *argv[]) {
+#ifdef _WIN32  
     OPENSSL_Applink();
-
+#endif
     // Default values
     std::string cert_dir = "certs";
     std::string cert_file = "server.crt";
