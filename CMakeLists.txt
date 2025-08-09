@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(MCPServer.cpp LANGUAGES CXX VERSION 1.0.2.0)
+project(MCPServer.cpp LANGUAGES CXX VERSION 1.0.2.3)
 
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_VISIBILITY_PRESET default)
@@ -176,7 +176,12 @@ endif()
 include(cmake/CPackConfig.cmake)
 
 # testing
-option(BUILD_TESTS "Build tests" ON)
+# Only build tests when including libs
+if(CPACK_INCLUDE_LIBS)
+    option(BUILD_TESTS "Build tests" ON)
+else()
+    option(BUILD_TESTS "Build tests" OFF)
+endif()
 
 if(BUILD_TESTS)
     enable_testing()
@@ -185,7 +190,12 @@ if(BUILD_TESTS)
 endif()
 
 # example
-option(BUILD_EXAMPLES "Build examples" ON)
+# Only build examples when including libs
+if(CPACK_INCLUDE_LIBS)
+    option(BUILD_EXAMPLES "Build examples" ON)
+else()
+    option(BUILD_EXAMPLES "Build examples" OFF)
+endif()
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
