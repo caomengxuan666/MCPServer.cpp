@@ -5,6 +5,7 @@
 #include "executable_path.h"
 #include "protocol/tool.h"
 #include "transport/session.h"
+#include "transport/ssl_session.h"
 #include <memory>
 #include <thread>
 
@@ -44,6 +45,17 @@ namespace mcp::core {
         plugin_path = path;
 #endif
         server_->plugin_paths_.push_back(plugin_path);
+        return *this;
+    }
+
+    MCPserver::Builder &MCPserver::Builder::with_https_port(unsigned short port) {
+        https_port_ = port;
+        return *this;
+    }
+
+    MCPserver::Builder &MCPserver::Builder::with_ssl_certificates(const std::string &cert_file, const std::string &private_key_file) {
+        cert_file_ = cert_file;
+        private_key_file_ = private_key_file;
         return *this;
     }
 
@@ -147,12 +159,25 @@ namespace mcp::core {
 
         if (enable_http_transport_) {
             // Automatically start HTTP transport as part of the build process
-            if (!server_->start_http_transport(6666, address_)) {
+            if (!server_->start_http_transport(port_, address_)) {
                 MCP_ERROR("Failed to start HTTP transport during server build");
             } else {
-                MCP_INFO("Streamable HTTP Transport started on {}:{}", address_, port_);
+                // HTTP transport started message is logged in start_http_transport
             }
         }
+
+        if (enable_https_transport_) {
+            // Automatically start HTTPS transport as part of the build process
+            if (!server_->start_https_transport(https_port_, address_, cert_file_, private_key_file_)) {
+                MCP_ERROR("Failed to start HTTPS transport during server build");
+                MCP_ERROR("HTTPS transport will be disabled");
+                // Disable HTTPS transport since it failed to start
+                enable_https_transport_ = false;
+            } else {
+                MCP_INFO("HTTPS Transport started on {}:{}", address_, https_port_);
+            }
+        }
+
         if (enable_stdio_transport_) {
             // Automatically start Stdio transport as part of the build process
             if (!server_->start_stdio_transport()) {
@@ -160,6 +185,22 @@ namespace mcp::core {
             } else {
                 MCP_INFO("Stdio Transport started");
             }
+        }
+
+        // Summary of enabled transports
+        if (enable_http_transport_ || enable_https_transport_ || enable_stdio_transport_) {
+            MCP_INFO("Enabled transports:");
+            if (enable_stdio_transport_) {
+                MCP_INFO("  - Stdio transport");
+            }
+            if (enable_http_transport_) {
+                MCP_INFO("  - HTTP transport on port {}", port_);
+            }
+            if (enable_https_transport_) {
+                MCP_INFO("  - HTTPS transport on port {}", https_port_);
+            }
+        } else {
+            MCP_WARN("No transports enabled. Server will not be able to receive messages.");
         }
 
         return std::move(server_);
@@ -198,6 +239,40 @@ namespace mcp::core {
         }
     }
 
+    bool MCPserver::start_https_transport(uint16_t port, const std::string &address,
+                                          const std::string &cert_file, const std::string &private_key_file) {
+        try {
+            https_transport_ = std::make_unique<mcp::transport::HttpsTransport>(address, port, cert_file, private_key_file);
+
+            auto success = https_transport_->start([this](const std::string &msg,
+                                                          std::shared_ptr<mcp::transport::Session> session,
+                                                          const std::string &session_id) {
+                MCP_DEBUG("HTTPS message received: \n{}", msg);
+                // handle by dispatcher
+                // 将Session转换为SslSession以确保正确处理HTTPS会话
+                auto ssl_session = std::dynamic_pointer_cast<mcp::transport::SslSession>(session);
+                request_handler_->handle_request(msg, ssl_session ? ssl_session : session, session_id);
+            });
+
+            if (success) {
+                MCP_INFO("HTTPS Transport started on {}:{}", address, port);
+            } else {
+                MCP_ERROR("Failed to start HTTPS Transport on {}:{}", address, port);
+                MCP_ERROR("Please make sure the SSL certificate and private key files exist:");
+                MCP_ERROR("  Certificate file: {}", cert_file);
+                MCP_ERROR("  Private key file: {}", private_key_file);
+            }
+
+            return success;
+        } catch (const std::exception &e) {
+            MCP_ERROR("Exception when starting HTTPS Transport: {}", e.what());
+            MCP_ERROR("Please make sure the SSL certificate and private key files exist:");
+            MCP_ERROR("  Certificate file: {}", cert_file);
+            MCP_ERROR("  Private key file: {}", private_key_file);
+            return false;
+        }
+    }
+
     bool MCPserver::start_stdio_transport() {
         try {
             // handle stdio
@@ -227,8 +302,30 @@ namespace mcp::core {
     }
 
     void MCPserver::run() {
-        if (http_transport_) {
-            http_transport_->get_io_context().run();
+        // Check if we have any transport running
+        if (http_transport_ || https_transport_) {
+            std::vector<std::thread> threads;
+
+            // Run io_context for HTTP transport
+            if (http_transport_) {
+                threads.emplace_back([this]() {
+                    http_transport_->get_io_context().run();
+                });
+            }
+
+            // Run io_context for HTTPS transport
+            if (https_transport_) {
+                threads.emplace_back([this]() {
+                    https_transport_->get_io_context().run();
+                });
+            }
+
+            // Join all threads
+            for (auto &t: threads) {
+                if (t.joinable()) {
+                    t.join();
+                }
+            }
         } else {
             // for http_transport disable and stdio enable
             MCP_INFO("MCPServer is running in stdio-only mode. Waiting for input on stdin...");
@@ -239,7 +336,14 @@ namespace mcp::core {
             }
         }
     }
+
     asio::io_context &MCPserver::get_io_context() {
-        return http_transport_->get_io_context();
+        // Return HTTP context if available, otherwise HTTPS context
+        if (http_transport_) {
+            return http_transport_->get_io_context();
+        } else if (https_transport_) {
+            return https_transport_->get_io_context();
+        }
+        return io_context_;
     }
 }// namespace mcp::core

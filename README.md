@@ -35,6 +35,12 @@ The server implements the JSON-RPC 2.0 protocol over HTTP transport and supports
 
 ## Features
 
+- Full implementation of the Model Communication Protocol (MCP)
+- JSON-RPC 2.0 over HTTP/HTTPS transport
+- Plugin system for extending functionality
+- Built-in tools (echo, file operations, HTTP requests, system commands)
+- Streaming responses with Server-Sent Events (SSE)
+- Comprehensive logging and error handling
 - 🚀 **High Performance**: Built with C++20 and optimized with mimalloc for superior performance
 - 🔌 **Plugin System**: Extensible architecture with dynamic plugin loading
 - 🌐 **HTTP Transport**: Full HTTP/1.1 support with SSE streaming capabilities
@@ -205,7 +211,7 @@ The server implements the JSON-RPC 2.0 protocol over HTTP. All requests should b
 
 ### Example Request
 
-```json
+``json
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -216,7 +222,7 @@ The server implements the JSON-RPC 2.0 protocol over HTTP. All requests should b
 
 ### Example Response
 
-```json
+``json
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -283,3 +289,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   <p>Built with ❤️ for the AI community</p>
   <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href=https://github.com/caomengxuan666/MCPServer.cpp/issues>Issues</a></p>
 </div>
+```
+
+## SSL/TLS Support (HTTPS)
+
+MCPServer++ now supports HTTPS connections for secure communication. To enable HTTPS, you need to:
+
+1. Generate SSL certificate and private key files
+2. Configure the server to use these files
+
+Example using OpenSSL to generate self-signed certificates:
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 365 -nodes
+```
+
+Then configure the server in the config.ini file:
+```ini
+[server]
+https_enabled = true
+https_port = 6667
+ssl_cert_file = server.crt
+ssl_private_key_file = server.key
+```
+
+The server will then listen on both HTTP (port 6666) and HTTPS (port 6667) endpoints, allowing clients to choose their preferred connection method.

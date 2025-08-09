@@ -3,7 +3,7 @@ file(GLOB TRANSPORT_SOURCES "*.cpp")
 
 add_library(mcp_transport ${TRANSPORT_SOURCES})
 
-target_include_directories(mcp_transport PUBLIC 
+target_include_directories(mcp_transport PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/mcp/transport>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
@@ -22,8 +22,9 @@ else()
     target_compile_options(mcp_transport PRIVATE -Wall -Wextra)
 endif()
 
-target_link_libraries(mcp_transport PUBLIC 
-    mcp_protocol
+target_link_libraries(mcp_transport PUBLIC
+    mcp_core
+    MCP::OpenSSL
 )
 
 # Conditionally install the library and headers

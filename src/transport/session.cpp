@@ -1,4 +1,3 @@
-// src/transport/session.cpp
 #include "session.h"
 #include "core/logger.h"
 #include "http_handler.h"
@@ -84,7 +83,7 @@ namespace mcp::transport {
             }
         } catch (const std::exception &e) {
             if (!closed_) {
-                MCP_WARN("Session read error");
+                MCP_WARN("Session read error: {}", e.what());
             }
         }
         close();
@@ -106,21 +105,24 @@ namespace mcp::transport {
 
             co_await asio::async_write(socket_, asio::buffer(message), use_awaitable);
         } catch (const std::exception &e) {
-            MCP_ERROR("Failed to write to socket");
+            MCP_ERROR("Failed to write to socket: {}", e.what());
             close();
         }
         co_return;
     }
+
     void Session::close() {
         if (!closed_ && socket_.is_open()) {
-            socket_.cancel();
-            std::array<char, 8192> discard_buf;
             asio::error_code ec;
+            socket_.cancel(ec);
+            
+            std::array<char, 8192> discard_buf;
             while (socket_.available(ec) > 0 && !ec) {
                 socket_.read_some(asio::buffer(discard_buf), ec);
             }
-            (void) socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
-            (void) socket_.close(ec);
+            
+            socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+            socket_.close(ec);
             std::fill(buffer_.begin(), buffer_.end(), static_cast<char>(0));
             closed_ = true;
         }
@@ -129,4 +131,13 @@ namespace mcp::transport {
     void Session::clear_buffer() {
         std::fill(buffer_.begin(), buffer_.end(), static_cast<char>(0));
     }
+    
+    bool Session::is_closed() const {
+        return !socket_.is_open();
+    }
+
+    const std::string &Session::get_session_id() const {
+        return session_id_;
+    }
+
 }// namespace mcp::transport

@@ -16,7 +16,7 @@
 ## 目录
 
 - [简介](#简介)
-- [特性](#特性)
+- [功能特性](#功能特性)
 - [架构](#架构)
 - [快速开始](#快速开始)
 - [从源码构建](#从源码构建)
@@ -33,18 +33,37 @@ MCPServer.cpp 是一个使用现代 C++ 编写的高性能、跨平台的模型�
 
 该服务器通过 HTTP 传输实现了 JSON-RPC 2.0 协议，并支持常规请求-响应和服务器发送事件（SSE）流式传输，以实现实时通信。
 
-## 特性
+## 功能特性
 
-- 🚀 **高性能**: 使用 C++20 构建，并通过 mimalloc 优化性能
-- 🔌 **插件系统**: 可扩展的架构，支持动态插件加载
-- 🌐 **HTTP 传输**: 完整的 HTTP/1.1 支持，具备 SSE 流式传输能力
-- 📦 **JSON-RPC 2.0**: 完整实现了 JSON-RPC 2.0 规范
-- 🛠️ **内置工具**: 包含文件操作、HTTP 请求和系统命令
-- 🧠 **AI 模型就绪**: 专为 AI 模型集成而设计
-- 🔄 **异步 I/O**: 基于 ASIO 实现高效的并发处理
-- 📊 **日志**: 使用 spdlog 实现全面的日志记录
-- 📈 **可扩展**: 多线程架构，可处理并发请求
-- 🌍 **跨平台**: 支持 Windows、Linux 和 macOS
+- 完整实现模型通信协议（MCP）
+- 基于 HTTP/HTTPS 的 JSON-RPC 2.0 传输协议
+- 插件系统，可扩展功能
+- 内置工具（echo、文件操作、HTTP请求、系统命令）
+- 使用服务器发送事件（SSE）的流式响应
+- 全面的日志记录和错误处理
+
+### SSL/TLS 支持（HTTPS）
+
+MCPServer++ 现在支持 HTTPS 连接以实现安全通信。要启用 HTTPS，您需要：
+
+1. 生成 SSL 证书和私钥文件
+2. 配置服务器使用这些文件
+
+使用 OpenSSL 生成自签名证书的示例：
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 365 -nodes
+```
+
+然后在 config.ini 文件中配置服务器：
+```ini
+[server]
+https_enabled = true
+https_port = 6667
+ssl_cert_file = server.crt
+ssl_private_key_file = server.key
+```
+
+服务器将同时监听 HTTP（端口 6666）和 HTTPS（端口 6667）端点，允许客户端选择其首选的连接方式。
 
 ## 架构
 
@@ -205,7 +224,7 @@ MCPServer.cpp 支持强大的插件系统，允许在不修改核心服务器的
 
 ### 请求示例
 
-```json
+``json
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -216,7 +235,7 @@ MCPServer.cpp 支持强大的插件系统，允许在不修改核心服务器的
 
 ### 响应示例
 
-```json
+``json
 {
   "jsonrpc": "2.0",
   "id": 1,

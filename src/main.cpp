@@ -18,7 +18,7 @@ int main() {
         // Step 2: Load the full configuration from the INI file.
         auto config = mcp::config::GlobalConfig::load();
 
-        // Step 3: Initialize the asynchronous logger using settings from the config.
+        // Step 4: Initialize the asynchronous logger using settings from the config.
         // Parameters include log file path, log level, maximum file size, and number of rotation files.
         mcp::core::initializeAsyncLogger(
                 config.server.log_path,
@@ -27,7 +27,6 @@ int main() {
                 config.server.max_files);
 
         auto address = config.server.ip;
-        auto port = config.server.port;
 
 
         // Set the log message format pattern. Use default if not specified in config.
@@ -40,7 +39,7 @@ int main() {
         // Log that the application has started successfully.
         MCP_INFO("MCPServer.cpp started with configuration from '{}'", mcp::config::CONFIG_FILE);
 
-        // Step 4: Output all configuration values to the debug log for inspection.
+        // Step 3: Output all configuration values to the debug log for inspection.
         mcp::config::print_config(config);
 
 
@@ -48,14 +47,18 @@ int main() {
         // Configure transport layers and plugin directory based on settings.
         auto server = mcp::core::MCPserver::Builder{}
                               .with_plugin_path(config.server.plugin_dir)               // Load plugins from specified directory
-                              .enableHttpTransport(config.server.enable_streamable_http)// Enable HTTP transport if configured
-                              .with_address(address)
-                              .with_port(port)
-                              .enableStdioTransport(config.server.enable_stdio)// Enable stdio transport if configured
-                              .build();                                        // Construct the server instance
+                              .with_address(address)                                    // Set server address
+                              .with_port(config.server.http_port)                       // Set HTTP port
+                              .enableHttpTransport(config.server.enable_http)           // Enable HTTP transport if configured
+                              .enableStdioTransport(config.server.enable_stdio)         // Enable stdio transport if configured
+                              .enableHttpsTransport(config.server.enable_https)         // Enable HTTPS transport if configured
+                              .with_https_port(config.server.https_port)                // Set HTTPS port
+                              .with_ssl_certificates(config.server.ssl_cert_file, 
+                                                    config.server.ssl_key_file)         // Set SSL certificate files
+                              .build();                                                 // Construct the server instance
 
         // Notify that the server is ready to accept connections.
-        MCP_INFO("MCPServer.cpp is ready. Listening on {}:{}", config.server.ip, config.server.port);
+        MCP_INFO("MCPServer.cpp is ready.");
         MCP_INFO("Send JSON-RPC messages via /mcp.");
 
         // Step 6: Start the server's main loop.

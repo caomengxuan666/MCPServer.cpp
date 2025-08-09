@@ -9,6 +9,7 @@
 #include "business/tool_registry.h"
 #include "mcp_dispatcher.h"
 #include "transport/http_transport.h"
+#include "transport/https_transport.h"
 #include <asio/io_context.hpp>
 #include <memory>
 #include <vector>
@@ -31,11 +32,14 @@ namespace mcp::core {
         friend class Builder;
 
         bool start_http_transport(uint16_t port, const std::string &address);
+        bool start_https_transport(uint16_t port, const std::string &address,
+                                   const std::string& cert_file, const std::string& private_key_file);
         bool start_stdio_transport();
         std::shared_ptr<business::ToolRegistry> registry_;
         std::shared_ptr<business::PluginManager> plugin_manager_;
         std::unique_ptr<McpDispatcher> dispatcher_;
         std::unique_ptr<mcp::transport::HttpTransport> http_transport_;
+        std::unique_ptr<mcp::transport::HttpsTransport> https_transport_;
         mcp::transport::StdioTransport stdio_transport_;
         std::unique_ptr<business::RequestHandler> request_handler_;
 
@@ -64,8 +68,14 @@ namespace mcp::core {
             port_ = port;
             return *this;
         }
+        Builder &with_https_port(unsigned short port = 6667);
+        Builder &with_ssl_certificates(const std::string& cert_file, const std::string& private_key_file);
         Builder &enableHttpTransport(bool enable = true) {
             enable_http_transport_ = enable;
+            return *this;
+        }
+        Builder &enableHttpsTransport(bool enable = true) {
+            enable_https_transport_ = enable;
             return *this;
         }
         Builder &enableStdioTransport(bool enable = true) {
@@ -77,10 +87,14 @@ namespace mcp::core {
     private:
         std::unique_ptr<MCPserver> server_ = nullptr;
         bool enable_http_transport_ = false;
+        bool enable_https_transport_ = false;
         bool enable_stdio_transport_ = false;
 
-        std::string address_;
-        unsigned short port_ = 0;
+        std::string address_ = "0.0.0.0";
+        unsigned short port_ = 6666;
+        unsigned short https_port_ = 6667;
+        std::string cert_file_ = "server.crt";
+        std::string private_key_file_ = "server.key";
     };
 
 }// namespace mcp::core

@@ -14,6 +14,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include(cmake/PluginCommon.cmake)
 include(cmake/CopyIniConfig.cmake)
+include(cmake/FindMCPOpenSSL.cmake)
 copy_ini_config()
 
 set(PROJECT_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR} CACHE STRING "Major version number")
@@ -47,6 +48,8 @@ add_executable(mcp-server++ src/main.cpp)
 
 add_compile_definitions(NOMINMAX)
 add_compile_definitions(WIN32_LEAN_AND_MEAN)
+
+include_directories(include)
 
 # header directories
 target_include_directories(mcp-server++ PRIVATE
@@ -96,6 +99,7 @@ if(UNIX)
         mcp_protocol
         -Wl,--end-group
         mcp_plugin_sdk
+        MCP::OpenSSL
     )
 else()
     target_link_libraries(mcp-server++ PRIVATE
@@ -104,6 +108,7 @@ else()
         mcp_transport
         mcp_protocol
         mcp_plugin_sdk
+        MCP::OpenSSL
     )
 endif()
 

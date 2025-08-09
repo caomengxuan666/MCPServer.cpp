@@ -2,6 +2,7 @@
 #include "core/io_context_pool.hpp"
 #include "core/logger.h"
 #include "session.h"
+#include <filesystem>
 
 
 using asio::use_awaitable;
@@ -12,6 +13,7 @@ namespace mcp::transport {
         : io_context_(),
           acceptor_(io_context_, asio::ip::tcp::endpoint(asio::ip::make_address(address), port)),
           work_guard_(asio::make_work_guard(io_context_)) {
+        MCP_INFO("HTTP Transport initialized on {}:{}", address, port);
     }
 
     HttpTransport::~HttpTransport() {
@@ -20,8 +22,8 @@ namespace mcp::transport {
 
     bool HttpTransport::start(MessageCallback on_message) {
         handler_ = std::make_unique<HttpHandler>(std::move(on_message));
-        MCP_INFO("Streamable HTTP Transport started on {}:{}",
-                 acceptor_.local_endpoint().address().to_string(),
+        MCP_INFO("Streamable HTTP Transport started on {}:{}", 
+                 acceptor_.local_endpoint().address().to_string(), 
                  acceptor_.local_endpoint().port());
 
         // launch the acceptor to handle incoming connections
@@ -36,8 +38,8 @@ namespace mcp::transport {
                     // get the io_context from the AsioIOServicePool
                     auto& session_io_context = AsioIOServicePool::GetInstance()->GetIOService();
                     
-                    // create session for each accepted socket
-                    auto session = std::make_shared<Session>(std::move(socket));
+                    // create TCP session for each accepted socket
+                    auto session = std::make_shared<TcpSession>(std::move(socket));
                     
                     // launch the session to handle requests
                     asio::co_spawn(session_io_context, [session, handler = handler_.get()]() -> asio::awaitable<void> {
