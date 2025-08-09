@@ -27,14 +27,16 @@ target_link_libraries(mcp_protocol PUBLIC
     mcp_core
 )
 
-# Install the library and headers
-install(TARGETS mcp_protocol
-    EXPORT MCPServer++Targets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-)
+# Conditionally install the library and headers
+if(CPACK_INCLUDE_LIBS)
+    install(TARGETS mcp_protocol
+        EXPORT MCPServer++Targets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
 
-install(FILES tool.h
-    DESTINATION include/mcp/protocol
-)
+    install(FILES tool.h
+        DESTINATION include/mcp/protocol
+    )
+endif()

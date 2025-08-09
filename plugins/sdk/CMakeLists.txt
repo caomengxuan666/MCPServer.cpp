@@ -30,16 +30,18 @@ target_link_libraries(mcp_plugin_sdk PUBLIC
     mcp_core
 )
 
-# Install the library and headers
-install(TARGETS mcp_plugin_sdk
-    EXPORT MCPServer++Targets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-)
+# Conditionally install the library and headers
+if(CPACK_INCLUDE_LIBS)
+    install(TARGETS mcp_plugin_sdk
+        EXPORT MCPServer++Targets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
 
-install(FILES
-    mcp_plugin.h
-    tool_info_parser.h
-    DESTINATION include/mcp/plugin_sdk
-)
+    install(FILES
+        mcp_plugin.h
+        tool_info_parser.h
+        DESTINATION include/mcp/plugin_sdk
+    )
+endif()

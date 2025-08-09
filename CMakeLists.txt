@@ -126,48 +126,51 @@ install(FILES
     DESTINATION share/doc/mcp-server++
 )
 
-# Install headers for development
-install(DIRECTORY src/
-    DESTINATION include/mcp
-    FILES_MATCHING PATTERN "*.h"
-)
+# Conditionally install headers for development (only when including libs)
+if(CPACK_INCLUDE_LIBS)
+    # Install headers for development
+    install(DIRECTORY src/
+        DESTINATION include/mcp
+        FILES_MATCHING PATTERN "*.h"
+    )
 
-# Install router headers
-install(DIRECTORY src/routers/
-    DESTINATION include/mcp/routers
-    FILES_MATCHING PATTERN "*.hpp"
-)
+    # Install router headers
+    install(DIRECTORY src/routers/
+        DESTINATION include/mcp/routers
+        FILES_MATCHING PATTERN "*.hpp"
+    )
 
-# Create and install CMake config files
-include(CMakePackageConfigHelpers)
+    # Create and install CMake config files
+    include(CMakePackageConfigHelpers)
 
-# Generate the config file
-configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MCPConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++Config.cmake
-    INSTALL_DESTINATION lib/cmake/MCPServer++
-)
+    # Generate the config file
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MCPConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++Config.cmake
+        INSTALL_DESTINATION lib/cmake/MCPServer++
+    )
 
-# Generate the version file
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++ConfigVersion.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
+    # Generate the version file
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++ConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
 
-# Install the config files
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++Config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++ConfigVersion.cmake
-    DESTINATION lib/cmake/MCPServer++
-)
+    # Install the config files
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++Config.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++ConfigVersion.cmake
+        DESTINATION lib/cmake/MCPServer++
+    )
 
-# Export the targets
-install(EXPORT MCPServer++Targets
-    FILE MCPServer++Targets.cmake
-    NAMESPACE MCPServer++::
-    DESTINATION lib/cmake/MCPServer++
-)
+    # Export the targets
+    install(EXPORT MCPServer++Targets
+        FILE MCPServer++Targets.cmake
+        NAMESPACE MCPServer++::
+        DESTINATION lib/cmake/MCPServer++
+    )
+endif()
 
 # CPack support for packaging
 include(cmake/CPackConfig.cmake)

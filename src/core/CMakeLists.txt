@@ -34,15 +34,17 @@ endif()
 
 #target_link_libraries(mcp_core PRIVATE ${CORE_LINKED_LIBRARIES})
 
-# Install the library and headers
-install(TARGETS mcp_core
-    EXPORT MCPServer++Targets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-)
+# Conditionally install the library and headers
+if(CPACK_INCLUDE_LIBS)
+    install(TARGETS mcp_core
+        EXPORT MCPServer++Targets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-    DESTINATION include/mcp/core
-    FILES_MATCHING PATTERN "*.h"
-)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+        DESTINATION include/mcp/core
+        FILES_MATCHING PATTERN "*.h"
+    )
+endif()

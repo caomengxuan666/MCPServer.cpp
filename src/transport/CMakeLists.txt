@@ -26,15 +26,17 @@ target_link_libraries(mcp_transport PUBLIC
     mcp_protocol
 )
 
-# Install the library and headers
-install(TARGETS mcp_transport
-    EXPORT MCPServer++Targets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-)
+# Conditionally install the library and headers
+if(CPACK_INCLUDE_LIBS)
+    install(TARGETS mcp_transport
+        EXPORT MCPServer++Targets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-    DESTINATION include/mcp/transport
-    FILES_MATCHING PATTERN "*.h"
-)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+        DESTINATION include/mcp/transport
+        FILES_MATCHING PATTERN "*.h"
+    )
+endif()

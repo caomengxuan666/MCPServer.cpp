@@ -1,5 +1,7 @@
 name: Package
 
+# Trigger conditions: Run on pushes to main/master branches, pushes to tags starting with 'v',
+# and pull requests targeting main/master branches
 on:
   push:
     branches: [main, master]
@@ -8,52 +10,62 @@ on:
     branches: [main, master]
 
 jobs:
+  # Job 1: Package with included libraries
   package:
     name: Package for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      # Prevent other matrix jobs from failing if one fails
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2022]
+        os: [ubuntu-22.04, windows-2022]
 
     steps:
+      # Check out repository code with recursive submodules
       - uses: actions/checkout@v3
         with:
           submodules: "recursive"
 
+      # Install build dependencies for Ubuntu
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y cmake rpm
-        timeout-minutes: 5
+        timeout-minutes: 5 # Prevent infinite hanging
 
+      # Install NSIS (Windows installer tool)
       - name: Install NSIS (Windows)
         if: runner.os == 'Windows'
         run: |
           choco install nsis
-        timeout-minutes: 5
+        timeout-minutes: 5 # Prevent infinite hanging
 
+      # Configure CMake build system with verbose logging
       - name: Configure CMake
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release --log-level=VERBOSE
         timeout-minutes: 10
 
+      # Build the project with verbose output
       - name: Build
         run: |
           cmake --build build --config Release --verbose
-        timeout-minutes: 20
+        timeout-minutes: 20 # Longer timeout for compilation
 
+      # Package built artifacts using CPack
       - name: Package (with libs)
         run: |
           cd build
           cpack
         timeout-minutes: 10
 
+      # List generated packages for verification/debugging
       - name: List generated packages (with libs)
+        shell: bash
         run: |
           ls -la build/
-        shell: bash
 
+      # Upload packaged artifacts to GitHub Actions
       - name: Upload artifacts (with libs)
         uses: actions/upload-artifact@v4
         with:
@@ -65,52 +77,61 @@ jobs:
             build/*.rpm
             build/*.exe
 
+  # Job 2: Package without included libraries
   package-no-libs:
     name: Package for ${{ matrix.os }} (no libs)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2022]
+        os: [ubuntu-22.04, windows-2022]
 
     steps:
+      # Check out repository code with recursive submodules
       - uses: actions/checkout@v3
         with:
           submodules: "recursive"
 
+      # Install build dependencies for Ubuntu
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y cmake rpm
         timeout-minutes: 5
 
+      # Install NSIS (Windows installer tool)
       - name: Install NSIS (Windows)
         if: runner.os == 'Windows'
         run: |
           choco install nsis
         timeout-minutes: 5
 
+      # Configure CMake with library exclusion flag
       - name: Configure CMake (no libs)
         run: |
           cmake -B build-nolibs -DCMAKE_BUILD_TYPE=Release -DCPACK_INCLUDE_LIBS=OFF --log-level=VERBOSE
         timeout-minutes: 10
 
+      # Build the project with verbose output
       - name: Build (no libs)
         run: |
           cmake --build build-nolibs --config Release --verbose
         timeout-minutes: 20
 
+      # Package built artifacts using CPack
       - name: Package (no libs)
         run: |
           cd build-nolibs
           cpack
         timeout-minutes: 10
 
+      # List generated packages for verification/debugging
       - name: List generated packages (no libs)
+        shell: bash
         run: |
           ls -la build-nolibs/
-        shell: bash
 
+      # Upload packaged artifacts to GitHub Actions
       - name: Upload artifacts (no libs)
         uses: actions/upload-artifact@v4
         with:
@@ -122,32 +143,35 @@ jobs:
             build-nolibs/*.rpm
             build-nolibs/*.exe
 
+  # Job 3: Create GitHub Release with built artifacts
   release:
     name: Create Release
-    needs: [package, package-no-libs]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-20.04
+    needs: [package, package-no-libs] # Wait for both packaging jobs to complete
+    if: startsWith(github.ref, 'refs/tags/v') # Only run for version tags
+    runs-on: ubuntu-22.04
     steps:
+      # Download all previously uploaded artifacts
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
+      # Create GitHub Release and attach artifacts
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            mcp-server++-ubuntu-20.04-with-libs/*.tar.gz
-            mcp-server++-ubuntu-20.04-with-libs/*.zip
-            mcp-server++-ubuntu-20.04-with-libs/*.deb
-            mcp-server++-ubuntu-20.04-with-libs/*.rpm
+            mcp-server++-ubuntu-22.04-with-libs/*.tar.gz
+            mcp-server++-ubuntu-22.04-with-libs/*.zip
+            mcp-server++-ubuntu-22.04-with-libs/*.deb
+            mcp-server++-ubuntu-22.04-with-libs/*.rpm
             mcp-server++-windows-2022-with-libs/*.exe
             mcp-server++-windows-2022-with-libs/*.zip
             mcp-server++-windows-2022-with-libs/*.tar.gz
-            mcp-server++-ubuntu-20.04-no-libs/*.tar.gz
-            mcp-server++-ubuntu-20.04-no-libs/*.zip
-            mcp-server++-ubuntu-20.04-no-libs/*.deb
-            mcp-server++-ubuntu-20.04-no-libs/*.rpm
+            mcp-server++-ubuntu-22.04-no-libs/*.tar.gz
+            mcp-server++-ubuntu-22.04-no-libs/*.zip
+            mcp-server++-ubuntu-22.04-no-libs/*.deb
+            mcp-server++-ubuntu-22.04-no-libs/*.rpm
             mcp-server++-windows-2022-no-libs/*.exe
             mcp-server++-windows-2022-no-libs/*.zip
             mcp-server++-windows-2022-no-libs/*.tar.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Authentication for release creation
