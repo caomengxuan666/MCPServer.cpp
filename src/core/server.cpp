@@ -4,6 +4,8 @@
 #include "core/logger.h"
 #include "executable_path.h"
 #include "protocol/tool.h"
+#include "transport/session.h"
+#include <memory>
 #include <thread>
 
 
@@ -143,11 +145,21 @@ namespace mcp::core {
 
         server_->dispatcher_ = std::make_unique<McpDispatcher>(server_->registry_);
 
-        // Automatically start HTTP transport as part of the build process
-        if (!server_->start_http_transport(6666, "0.0.0.0")) {
-            MCP_ERROR("Failed to start HTTP transport during server build");
-        } else {
-            MCP_INFO("Streamable HTTP Transport started on 0.0.0.0:6666");
+        if (enable_http_transport_) {
+            // Automatically start HTTP transport as part of the build process
+            if (!server_->start_http_transport(6666, address_)) {
+                MCP_ERROR("Failed to start HTTP transport during server build");
+            } else {
+                MCP_INFO("Streamable HTTP Transport started on {}:{}", address_, port_);
+            }
+        }
+        if (enable_stdio_transport_) {
+            // Automatically start Stdio transport as part of the build process
+            if (!server_->start_stdio_transport()) {
+                MCP_ERROR("Failed to start Stdio transport during server build");
+            } else {
+                MCP_INFO("Stdio Transport started");
+            }
         }
 
         return std::move(server_);
@@ -186,12 +198,47 @@ namespace mcp::core {
         }
     }
 
-    void MCPserver::run() {
-        if (http_transport_) {
-            http_transport_->get_io_context().run();
+    bool MCPserver::start_stdio_transport() {
+        try {
+            // handle stdio
+            auto stdio_handler = [this](const std::string &msg) {
+                MCP_DEBUG("STDIO message received: {}", msg);
+
+                // use the same handler as http_transport_
+                request_handler_->handle_request(msg, nullptr, "");
+            };
+
+            // init the transport with the same registry tools as http_transport_
+            stdio_transport_ = mcp::transport::StdioTransport(registry_);
+
+            bool success = stdio_transport_.open(stdio_handler);
+
+            if (success) {
+                MCP_INFO("STDIO Transport started");
+            } else {
+                MCP_ERROR("Failed to start STDIO Transport");
+            }
+
+            return success;
+        } catch (const std::exception &e) {
+            MCP_ERROR("Exception when starting STDIO Transport: {}", e.what());
+            return false;
         }
     }
 
+    void MCPserver::run() {
+        if (http_transport_) {
+            http_transport_->get_io_context().run();
+        } else {
+            // for http_transport disable and stdio enable
+            MCP_INFO("MCPServer is running in stdio-only mode. Waiting for input on stdin...");
+            MCP_INFO("Press Ctrl+C to stop the server.");
+
+            while (true) {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        }
+    }
     asio::io_context &MCPserver::get_io_context() {
         return http_transport_->get_io_context();
     }

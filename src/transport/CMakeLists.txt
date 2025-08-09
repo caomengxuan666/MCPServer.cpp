@@ -5,10 +5,10 @@ add_library(mcp_transport ${TRANSPORT_SOURCES})
 
 target_include_directories(mcp_transport PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/mcp_transport>
-    ${PROJECT_SOURCE_DIR}/third_party
-    ${PROJECT_SOURCE_DIR}/third_party/asio/include
-    ${PROJECT_SOURCE_DIR}/third_party/asio/standalone/include
+    $<INSTALL_INTERFACE:include/mcp/transport>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/asio/include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/asio/standalone/include>
 )
 
 target_compile_features(mcp_transport PUBLIC cxx_std_20)
@@ -24,4 +24,17 @@ endif()
 
 target_link_libraries(mcp_transport PUBLIC 
     mcp_protocol
+)
+
+# Install the library and headers
+install(TARGETS mcp_transport
+    EXPORT MCPServer++Targets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+    DESTINATION include/mcp/transport
+    FILES_MATCHING PATTERN "*.h"
 )

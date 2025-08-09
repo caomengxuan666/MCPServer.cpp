@@ -7,6 +7,7 @@
 #include "routers/tool_list.hpp"
 #include "routers/tools_call.hpp"
 #include "rpc_router.h"
+#include <iostream>
 
 
 namespace mcp::business {
@@ -54,6 +55,14 @@ namespace mcp::business {
             std::string err = protocol::make_error(
                     protocol::error_code::INVALID_REQUEST,
                     "Invalid JSON-RPC request");
+
+            // for stdio write to stdout
+            // if no session,it is stdio
+            if (!session) {
+                std::cout << err << std::endl;
+                return;
+            }
+
             send_response_(err, session, session_id);
             return;
         }
@@ -64,6 +73,14 @@ namespace mcp::business {
         // Only send unStreaming responses
         if (response.id != nullptr) {
             std::string resp_str = protocol::make_response(response);
+
+            // for stdio write to stdout
+            //if no session,it is stdio
+            if (!session) {
+                std::cout << resp_str << std::endl;
+                return;
+            }
+
             send_response_(resp_str, session, session_id);
         }
     }

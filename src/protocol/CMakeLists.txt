@@ -8,9 +8,9 @@ add_library(mcp_protocol ${PROTOCOL_SOURCES})
 
 target_include_directories(mcp_protocol PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/mcp_protocol>
-    ${PROJECT_SOURCE_DIR}/third_party
-    ${PROJECT_SOURCE_DIR}/third_party/nlohmann
+    $<INSTALL_INTERFACE:include/mcp/protocol>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/nlohmann>
 )
 
 target_compile_features(mcp_protocol PUBLIC cxx_std_20)
@@ -25,4 +25,16 @@ endif()
 
 target_link_libraries(mcp_protocol PUBLIC 
     mcp_core
+)
+
+# Install the library and headers
+install(TARGETS mcp_protocol
+    EXPORT MCPServer++Targets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(FILES tool.h
+    DESTINATION include/mcp/protocol
 )

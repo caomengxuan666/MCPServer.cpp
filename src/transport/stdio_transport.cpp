@@ -1,10 +1,17 @@
 // src/transport/stdio_transport.cpp
 #include "stdio_transport.h"
 #include "core/logger.h"
+#include "business/tool_registry.h"
+#include "protocol/json_rpc.h"
 #include <iostream>
 #include <thread>
+#include <sstream>
 
 namespace mcp::transport {
+
+    StdioTransport::StdioTransport(std::shared_ptr<mcp::business::ToolRegistry> registry)
+        : registry_(std::move(registry)) {
+    }
 
     bool StdioTransport::open(MessageCallback on_message) {
         MCP_INFO("STDIO Transport started, waiting for input...");

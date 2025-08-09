@@ -18,8 +18,8 @@ namespace mcp {
     namespace core {
 
         /**
-    * @brief Log levels for the logger
-    */
+        * @brief Log levels for the logger
+        */
         enum class LogLevel {
             TRACE = 0,
             DEBUG = 1,

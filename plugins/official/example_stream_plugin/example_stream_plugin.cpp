@@ -1,5 +1,6 @@
 #include "core/mcpserver_api.h"
 #include "mcp_plugin.h"
+#include "tool_info_parser.h"
 #include <atomic>
 #include <chrono>
 #include <nlohmann/json.hpp>
@@ -134,23 +135,20 @@ extern "C" MCP_API const char *call_tool(const char *name, const char *args_json
  * @param count Output parameter for tool count
  * @return ToolInfo* Array of tool descriptors
  */
-static std::vector<ToolInfo> g_tools = {
-        {
-                "example_stream",                                             // Tool name
-                "Generates number sequences from 1-1024 at 10 numbers/second",// Description
-                R"({
-            "type": "object",
-            "properties": {
-                "start": {"type": "number", "minimum": 1, "maximum": 1024}
-            },
-            "required": []
-        })",                                                                  // JSON Schema
-                true                                                          // is_streaming
-        }};
+static std::vector<ToolInfo> g_tools;
 
 extern "C" MCP_API ToolInfo *get_tools(int *count) {
-    *count = static_cast<int>(g_tools.size());
-    return g_tools.data();
+    try {
+        if (g_tools.empty()) {
+            g_tools = ToolInfoParser::loadFromFile("example_stream_plugin_tools.json");
+        }
+
+        *count = static_cast<int>(g_tools.size());
+        return g_tools.data();
+    } catch (const std::exception &e) {
+        *count = 0;
+        return nullptr;
+    }
 }
 
 /**

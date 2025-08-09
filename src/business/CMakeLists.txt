@@ -5,9 +5,9 @@ add_library(mcp_business ${BUSINESS_SOURCES})
 
 target_include_directories(mcp_business PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/mcp_business>
-    ${PROJECT_SOURCE_DIR}/third_party
-    ${PROJECT_SOURCE_DIR}/third_party/nlohmann
+    $<INSTALL_INTERFACE:include/mcp/business>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/nlohmann>
 )
 
 target_compile_features(mcp_business PUBLIC cxx_std_20)
@@ -22,4 +22,17 @@ endif()
 
 target_link_libraries(mcp_business PUBLIC
     mcp_transport
+)
+
+# Install the library and headers
+install(TARGETS mcp_business
+    EXPORT MCPServer++Targets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+    DESTINATION include/mcp/business
+    FILES_MATCHING PATTERN "*.h"
 )

@@ -13,6 +13,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include(cmake/PluginCommon.cmake)
+include(cmake/CopyIniConfig.cmake)
+copy_ini_config()
 
 set(PROJECT_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR} CACHE STRING "Major version number")
 set(PROJECT_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR} CACHE STRING "Minor version number")
@@ -66,6 +68,7 @@ endif()
 # target_link_libraries(mcp-server++ PRIVATE ${LINKED_LIBRARIES})
 if(MSVC)
     target_compile_options(mcp-server++ PRIVATE /W4 /permissive-)
+    add_compile_options(/wd4100)
 else()
     target_compile_options(mcp-server++ PRIVATE -Wall -Wextra -O3)
 endif()
@@ -103,6 +106,71 @@ else()
         mcp_plugin_sdk
     )
 endif()
+
+# Install the main executable
+install(TARGETS mcp-server++
+    RUNTIME DESTINATION bin
+)
+
+# Install config file
+install(FILES config.ini.example
+    DESTINATION bin
+    RENAME config.ini
+)
+
+# Install documentation
+install(FILES
+    README.md
+    README_zh.md
+    LICENSE
+    DESTINATION share/doc/mcp-server++
+)
+
+# Install headers for development
+install(DIRECTORY src/
+    DESTINATION include/mcp
+    FILES_MATCHING PATTERN "*.h"
+)
+
+# Install router headers
+install(DIRECTORY src/routers/
+    DESTINATION include/mcp/routers
+    FILES_MATCHING PATTERN "*.hpp"
+)
+
+# Create and install CMake config files
+include(CMakePackageConfigHelpers)
+
+# Generate the config file
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MCPConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++Config.cmake
+    INSTALL_DESTINATION lib/cmake/MCPServer++
+)
+
+# Generate the version file
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++ConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Install the config files
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/MCPServer++ConfigVersion.cmake
+    DESTINATION lib/cmake/MCPServer++
+)
+
+# Export the targets
+install(EXPORT MCPServer++Targets
+    FILE MCPServer++Targets.cmake
+    NAMESPACE MCPServer++::
+    DESTINATION lib/cmake/MCPServer++
+)
+
+# CPack support for packaging
+include(cmake/CPackConfig.cmake)
 
 # testing
 option(BUILD_TESTS "Build tests" ON)

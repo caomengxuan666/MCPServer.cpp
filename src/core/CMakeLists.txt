@@ -6,10 +6,10 @@ add_library(mcp_core ${CORE_SOURCES})
 
 target_include_directories(mcp_core PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/mcp_core>
-    ${PROJECT_SOURCE_DIR}/third_party
-    ${PROJECT_SOURCE_DIR}/third_party/spdlog/include
-    ${PROJECT_SOURCE_DIR}/third_party/asio/include
+    $<INSTALL_INTERFACE:include/mcp/core>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/spdlog/include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/asio/include>
 )
 
 target_compile_features(mcp_core PUBLIC cxx_std_20)
@@ -33,3 +33,16 @@ else()
 endif()
 
 #target_link_libraries(mcp_core PRIVATE ${CORE_LINKED_LIBRARIES})
+
+# Install the library and headers
+install(TARGETS mcp_core
+    EXPORT MCPServer++Targets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+    DESTINATION include/mcp/core
+    FILES_MATCHING PATTERN "*.h"
+)
