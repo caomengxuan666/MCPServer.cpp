@@ -64,49 +64,54 @@ function(configure_plugin plugin_name src_files)
         set_target_properties(${plugin_name} PROPERTIES SUFFIX ".dll")
     endif()
 
-    # Conditionally install the plugin based on CPACK_INCLUDE_LIBS setting
-    if(CPACK_INCLUDE_LIBS)
-        install(TARGETS ${plugin_name}
-            RUNTIME DESTINATION bin/plugins
-            LIBRARY DESTINATION lib/plugins
-            ARCHIVE DESTINATION lib/plugins
+    # Install the plugin to bin/plugins (always install plugins)
+    install(TARGETS ${plugin_name}
+        RUNTIME DESTINATION bin/plugins
+        LIBRARY DESTINATION bin/plugins
+    )
+
+    # automatically generate tools.json - always do this for runtime configs
+    set(json_source_file "${CMAKE_CURRENT_SOURCE_DIR}/tools.json")
+    set(json_target_file "${plugin_name}_tools.json")
+
+    if(EXISTS ${json_source_file})
+        # Create configs directory if not exists
+        file(MAKE_DIRECTORY ${CONFIGS_OUTPUT_DIR})
+
+        configure_file(
+            ${json_source_file}
+            ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+            COPYONLY
         )
 
-        # automatically generate tools.json
-        set(json_source_file "${CMAKE_CURRENT_SOURCE_DIR}/tools.json")
-        set(json_target_file "${plugin_name}_tools.json")
+        # build when the plugin is built
+        add_custom_command(
+            OUTPUT ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${json_source_file}
+            ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+            DEPENDS ${json_source_file}
+            COMMENT "Copying ${plugin_name} tools.json file to configs directory"
+        )
 
-        if(EXISTS ${json_source_file})
-            # Create configs directory if not exists
-            file(MAKE_DIRECTORY ${CONFIGS_OUTPUT_DIR})
+        add_custom_target(${plugin_name}_json ALL
+            DEPENDS ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+        )
 
-            configure_file(
-                ${json_source_file}
-                ${CONFIGS_OUTPUT_DIR}/${json_target_file}
-                COPYONLY
-            )
+        add_dependencies(${plugin_name} ${plugin_name}_json)
 
-            # build when the plugin is built
-            add_custom_command(
-                OUTPUT ${CONFIGS_OUTPUT_DIR}/${json_target_file}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${json_source_file}
-                ${CONFIGS_OUTPUT_DIR}/${json_target_file}
-                DEPENDS ${json_source_file}
-                COMMENT "Copying ${plugin_name} tools.json file to configs directory"
-            )
+        # Install configs to bin/configs (always install configs)
+        install(FILES ${json_source_file}
+            DESTINATION bin/configs
+            RENAME ${json_target_file}
+        )
+    endif()
 
-            add_custom_target(${plugin_name}_json ALL
-                DEPENDS ${CONFIGS_OUTPUT_DIR}/${json_target_file}
-            )
-
-            add_dependencies(${plugin_name} ${plugin_name}_json)
-
-            install(FILES ${json_source_file}
-                DESTINATION bin/configs
-                RENAME ${json_target_file}
-            )
-        endif()
+    # Conditionally install development files based on CPACK_INCLUDE_LIBS setting
+    if(CPACK_INCLUDE_LIBS)
+        install(TARGETS ${plugin_name}
+            ARCHIVE DESTINATION lib/plugins
+        )
 
         if(extra_libs)
             foreach(lib ${extra_libs})
