@@ -24,36 +24,40 @@ jobs:
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake rpm
+          sudo apt-get install -y cmake rpm
+        timeout-minutes: 5
 
       - name: Install NSIS (Windows)
         if: runner.os == 'Windows'
         run: |
           choco install nsis
+        timeout-minutes: 5
 
       - name: Configure CMake
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -DCMAKE_BUILD_TYPE=Release --log-level=VERBOSE
+        timeout-minutes: 10
 
       - name: Build
         run: |
-          cmake --build build --config Release
+          cmake --build build --config Release --verbose
+        timeout-minutes: 20
 
-      - name: Package
+      - name: Package (with libs)
         run: |
           cd build
           cpack
+        timeout-minutes: 10
 
-      - name: List generated packages
+      - name: List generated packages (with libs)
         run: |
           ls -la build/
         shell: bash
 
-      - name: Upload artifacts
+      - name: Upload artifacts (with libs)
         uses: actions/upload-artifact@v4
         with:
-          name: mcp-server++-${{ matrix.os }}
+          name: mcp-server++-${{ matrix.os }}-with-libs
           path: |
             build/*.tar.gz
             build/*.zip
@@ -61,9 +65,66 @@ jobs:
             build/*.rpm
             build/*.exe
 
+  package-no-libs:
+    name: Package for ${{ matrix.os }} (no libs)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-2022]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y cmake rpm
+        timeout-minutes: 5
+
+      - name: Install NSIS (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install nsis
+        timeout-minutes: 5
+
+      - name: Configure CMake (no libs)
+        run: |
+          cmake -B build-nolibs -DCMAKE_BUILD_TYPE=Release -DCPACK_INCLUDE_LIBS=OFF --log-level=VERBOSE
+        timeout-minutes: 10
+
+      - name: Build (no libs)
+        run: |
+          cmake --build build-nolibs --config Release --verbose
+        timeout-minutes: 20
+
+      - name: Package (no libs)
+        run: |
+          cd build-nolibs
+          cpack
+        timeout-minutes: 10
+
+      - name: List generated packages (no libs)
+        run: |
+          ls -la build-nolibs/
+        shell: bash
+
+      - name: Upload artifacts (no libs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-server++-${{ matrix.os }}-no-libs
+          path: |
+            build-nolibs/*.tar.gz
+            build-nolibs/*.zip
+            build-nolibs/*.deb
+            build-nolibs/*.rpm
+            build-nolibs/*.exe
+
   release:
     name: Create Release
-    needs: package
+    needs: [package, package-no-libs]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-20.04
     steps:
@@ -74,12 +135,19 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            mcp-server++-ubuntu-20.04/*.tar.gz
-            mcp-server++-ubuntu-20.04/*.zip
-            mcp-server++-ubuntu-20.04/*.deb
-            mcp-server++-ubuntu-20.04/*.rpm
-            mcp-server++-windows/*.exe
-            mcp-server++-windows/*.zip
-            mcp-server++-windows/*.tar.gz
+            mcp-server++-ubuntu-20.04-with-libs/*.tar.gz
+            mcp-server++-ubuntu-20.04-with-libs/*.zip
+            mcp-server++-ubuntu-20.04-with-libs/*.deb
+            mcp-server++-ubuntu-20.04-with-libs/*.rpm
+            mcp-server++-windows-2022-with-libs/*.exe
+            mcp-server++-windows-2022-with-libs/*.zip
+            mcp-server++-windows-2022-with-libs/*.tar.gz
+            mcp-server++-ubuntu-20.04-no-libs/*.tar.gz
+            mcp-server++-ubuntu-20.04-no-libs/*.zip
+            mcp-server++-ubuntu-20.04-no-libs/*.deb
+            mcp-server++-ubuntu-20.04-no-libs/*.rpm
+            mcp-server++-windows-2022-no-libs/*.exe
+            mcp-server++-windows-2022-no-libs/*.zip
+            mcp-server++-windows-2022-no-libs/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
