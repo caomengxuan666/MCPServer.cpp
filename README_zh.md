@@ -23,6 +23,7 @@
 - [配置](#配置)
 - [插件](#插件)
 - [API 参考](#api-参考)
+- [CI/CD 流水线](#cicd-流水线)
 - [贡献](#贡献)
 - [许可证](#许可证)
 
@@ -142,19 +143,45 @@ make -j$(nproc)
 
 ## 配置
 
-可以通过 [main.cpp](src/main.cpp) 文件配置服务器。主要配置选项包括：
+服务器使用 INI 格式的配置文件 ([config.ini](file://d:\codespace\MCPServer++\config.ini)) 进行运行时设置。在构建过程中，CMake 会自动将示例配置文件复制到构建目录。
 
-- 插件加载
-- 内置工具注册
-- 传输设置
+### 配置文件
+
+配置文件包含以下设置：
+
+- 服务器 IP 地址和端口
+- 日志选项（级别、路径、文件大小、轮换）
+- 插件目录位置
+- 传输协议（stdio、HTTP）
+
+项目根目录中提供了示例配置文件 ([config.ini.example](file://d:\codespace\MCPServer++\config.ini.example))。在构建过程中，CMake 会将此文件复制到构建目录并命名为 [config.ini](file://d:\codespace\MCPServer++\config.ini)。您可以修改此文件来自定义服务器行为。
+
+主要配置选项包括：
+
+- `ip`：服务器绑定的 IP 地址（默认：127.0.0.1）
+- `port`：用于传入连接的网络端口（默认：6666）
+- `log_level`：日志严重性级别（trace, debug, info, warn, error）
+- `log_path`：日志存储的文件系统路径
+- `plugin_dir`：包含插件模块的目录
+- `enable_stdio`：启用 stdio 传输（1=启用，0=禁用）
+- `enable_streamable_http`：启用 HTTP 传输（1=启用，0=禁用）
+
+要自定义配置：
+
+1. 在项目根目录中将 [config.ini.example](file://d:\codespace\MCPServer++\config.ini.example) 复制为 [config.ini](file://d:\codespace\MCPServer++\config.ini)
+2. 根据需要修改设置
+3. 重新构建项目 - CMake 会将您的自定义配置复制到构建目录
 
 配置示例：
-```cpp
-auto server = mcp::core::MCPserver::Builder{}
-                      .with_builtin_tools()
-                      .with_plugin("file_plugin.dll")
-                      .with_plugin("http_plugin.dll")
-                      .build();
+```ini
+[server]
+ip=0.0.0.0
+port=6666
+log_level=info
+log_path=logs/mcp_server.log
+plugin_dir=plugins
+enable_stdio=1
+enable_streamable_http=1
 ```
 
 ## 插件
@@ -211,6 +238,28 @@ MCPServer.cpp 支持强大的插件系统，允许在不修改核心服务器的
   ]
 }
 ```
+
+## CI/CD 流水线
+
+我们的项目使用 GitHub Actions 进行持续集成和部署。流水线会自动在多个平台上构建和测试服务器：
+
+### 支持的平台
+
+- **Ubuntu 22.04** (GitHub Actions 最新 LTS)
+- **Ubuntu 24.04** (GitHub Actions 最新 Ubuntu 版本)
+- **Windows Server 2022** (GitHub Actions 最新 Windows)
+
+### 构建变体
+
+我们提供两种构建变体以满足不同需求：
+1. **完整构建**: 包含所有库和开发头文件
+2. **最小构建**: 仅包含可执行文件和必要文件（无开发头文件或库）
+
+### 打包格式
+
+CI/CD 流水线生成多种格式的包：
+- **Windows**: ZIP, NSIS 安装程序 (EXE)
+- **Linux**: DEB, RPM, TAR.GZ, ZIP
 
 ## 贡献
 

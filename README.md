@@ -23,6 +23,7 @@
 - [Configuration](#configuration)
 - [Plugins](#plugins)
 - [API Reference](#api-reference)
+- [CI/CD Pipeline](#cicd-pipeline)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -142,19 +143,45 @@ make -j$(nproc)
 
 ## Configuration
 
-The server can be configured through the [main.cpp](src/main.cpp) file. Key configuration options include:
+The server uses an INI-style configuration file (`config.ini`) for runtime settings. During the build process, CMake automatically copies the example configuration file to the build directory.
 
-- Plugin loading
-- Built-in tool registration
-- Transport settings
+### Configuration File
+
+The configuration file contains settings for:
+
+- Server IP address and port
+- Logging options (level, path, file size, rotation)
+- Plugin directory location
+- Transport protocols (stdio, HTTP)
+
+An example configuration file (`config.ini.example`) is provided in the project root. During the build process, CMake copies this file to the build directory as `config.ini`. You can modify this file to customize the server behavior.
+
+Key configuration options include:
+
+- `ip`: Server binding IP address (default: 127.0.0.1)
+- `port`: Network port for incoming connections (default: 6666)
+- `log_level`: Logging severity (trace, debug, info, warn, error)
+- `log_path`: Filesystem path for log storage
+- `plugin_dir`: Directory containing plugin modules
+- `enable_stdio`: Enable stdio transport (1=enable, 0=disable)
+- `enable_streamable_http`: Enable HTTP transport (1=enable, 0=disable)
+
+To customize the configuration:
+
+1. Copy `config.ini.example` to `config.ini` in the project root
+2. Modify the settings as needed
+3. Rebuild the project - CMake will copy your customized config to the build directory
 
 Example configuration:
-```cpp
-auto server = mcp::core::MCPserver::Builder{}
-                      .with_builtin_tools()
-                      .with_plugin("file_plugin.dll")
-                      .with_plugin("http_plugin.dll")
-                      .build();
+```ini
+[server]
+ip=0.0.0.0
+port=6666
+log_level=info
+log_path=logs/mcp_server.log
+plugin_dir=plugins
+enable_stdio=1
+enable_streamable_http=1
 ```
 
 ## Plugins
@@ -211,6 +238,28 @@ The server implements the JSON-RPC 2.0 protocol over HTTP. All requests should b
   ]
 }
 ```
+
+## CI/CD Pipeline
+
+Our project uses GitHub Actions for continuous integration and deployment. The pipeline automatically builds and tests the server on multiple platforms:
+
+### Supported Platforms
+
+- **Ubuntu 22.04** (GitHub Actions latest LTS)
+- **Ubuntu 24.04** (GitHub Actions latest Ubuntu release)
+- **Windows Server 2022** (GitHub Actions latest Windows)
+
+### Build Variants
+
+We provide two build variants to suit different needs:
+1. **Full build**: Includes all libraries and development headers
+2. **Minimal build**: Contains only the executable and essential files (no development headers or libraries)
+
+### Packaging Formats
+
+The CI/CD pipeline generates packages in multiple formats:
+- **Windows**: ZIP, NSIS installer (EXE)
+- **Linux**: DEB, RPM, TAR.GZ, ZIP
 
 ## Contributing
 
