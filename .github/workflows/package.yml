@@ -18,7 +18,7 @@ jobs:
       # Prevent other matrix jobs from failing if one fails
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022]
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2022]
 
     steps:
       # Check out repository code with recursive submodules
@@ -30,6 +30,8 @@ jobs:
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
+          sudo apt-get update
+          sudo apt-get update
           sudo apt-get install -y cmake rpm
         timeout-minutes: 5 # Prevent infinite hanging
 
@@ -84,7 +86,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022]
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2022]
 
     steps:
       # Check out repository code with recursive submodules
@@ -163,6 +165,10 @@ jobs:
             mcp-server++-ubuntu-22.04-with-libs/*.zip
             mcp-server++-ubuntu-22.04-with-libs/*.deb
             mcp-server++-ubuntu-22.04-with-libs/*.rpm
+            mcp-server++-ubuntu-24.04-with-libs/*.tar.gz
+            mcp-server++-ubuntu-24.04-with-libs/*.zip
+            mcp-server++-ubuntu-24.04-with-libs/*.deb
+            mcp-server++-ubuntu-24.04-with-libs/*.rpm
             mcp-server++-windows-2022-with-libs/*.exe
             mcp-server++-windows-2022-with-libs/*.zip
             mcp-server++-windows-2022-with-libs/*.tar.gz
@@ -170,6 +176,10 @@ jobs:
             mcp-server++-ubuntu-22.04-no-libs/*.zip
             mcp-server++-ubuntu-22.04-no-libs/*.deb
             mcp-server++-ubuntu-22.04-no-libs/*.rpm
+            mcp-server++-ubuntu-24.04-no-libs/*.tar.gz
+            mcp-server++-ubuntu-24.04-no-libs/*.zip
+            mcp-server++-ubuntu-24.04-no-libs/*.deb
+            mcp-server++-ubuntu-24.04-no-libs/*.rpm
             mcp-server++-windows-2022-no-libs/*.exe
             mcp-server++-windows-2022-no-libs/*.zip
             mcp-server++-windows-2022-no-libs/*.tar.gz

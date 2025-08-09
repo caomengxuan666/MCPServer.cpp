@@ -2,7 +2,9 @@
 #include "session.h"
 #include "core/logger.h"
 #include "http_handler.h"
+#include <iomanip>
 #include <random>
+
 using asio::use_awaitable;
 
 namespace mcp::transport {
