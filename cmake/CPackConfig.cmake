@@ -17,10 +17,30 @@ set(CPACK_PACKAGE_CONTACT "MCPServer++ Team")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/your-repo/MCPServerPlusPlus")
 
 # Package file name - differentiate between full and no-lib versions
-if(CPACK_INCLUDE_LIBS)
-    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+# Include distribution information for Linux platforms
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # Get distribution information
+    find_program(LSB_RELEASE_EXEC lsb_release)
+    if(LSB_RELEASE_EXEC)
+        execute_process(COMMAND ${LSB_RELEASE_EXEC} -cs
+            OUTPUT_VARIABLE LSB_RELEASE_CODENAME
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+    
+    if(LSB_RELEASE_CODENAME)
+        set(DIST_SUFFIX "-${LSB_RELEASE_CODENAME}")
+    else()
+        set(DIST_SUFFIX "-${CMAKE_SYSTEM_NAME}")
+    endif()
 else()
-    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-no-libs")
+    set(DIST_SUFFIX "-${CMAKE_SYSTEM_NAME}")
+endif()
+
+if(CPACK_INCLUDE_LIBS)
+    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}${DIST_SUFFIX}-${CMAKE_SYSTEM_PROCESSOR}")
+else()
+    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}${DIST_SUFFIX}-${CMAKE_SYSTEM_PROCESSOR}-no-libs")
 endif()
 
 # Source package settings
