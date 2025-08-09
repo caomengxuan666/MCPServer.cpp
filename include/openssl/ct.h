@@ -11,87 +11,85 @@
  */
 
 
-
 #ifndef OPENSSL_CT_H
-# define OPENSSL_CT_H
-# pragma once
+#define OPENSSL_CT_H
+#pragma once
 
-# include <openssl/macros.h>
-# ifndef OPENSSL_NO_DEPRECATED_3_0
-#  define HEADER_CT_H
-# endif
+#include <openssl/macros.h>
+#ifndef OPENSSL_NO_DEPRECATED_3_0
+#define HEADER_CT_H
+#endif
 
-# include <openssl/opensslconf.h>
+#include <openssl/opensslconf.h>
 
-# ifndef OPENSSL_NO_CT
-# include <openssl/types.h>
-# include <openssl/safestack.h>
-# include <openssl/x509.h>
-# include <openssl/cterr.h>
-# ifdef  __cplusplus
+#ifndef OPENSSL_NO_CT
+#include <openssl/cterr.h>
+#include <openssl/safestack.h>
+#include <openssl/types.h>
+#include <openssl/x509.h>
+#ifdef __cplusplus
 extern "C" {
-# endif
+#endif
 
 
 /* Minimum RSA key size, from RFC6962 */
-# define SCT_MIN_RSA_BITS 2048
+#define SCT_MIN_RSA_BITS 2048
 
 /* All hashes are SHA256 in v1 of Certificate Transparency */
-# define CT_V1_HASHLEN SHA256_DIGEST_LENGTH
+#define CT_V1_HASHLEN SHA256_DIGEST_LENGTH
 
 SKM_DEFINE_STACK_OF_INTERNAL(SCT, SCT, SCT)
 #define sk_SCT_num(sk) OPENSSL_sk_num(ossl_check_const_SCT_sk_type(sk))
-#define sk_SCT_value(sk, idx) ((SCT *)OPENSSL_sk_value(ossl_check_const_SCT_sk_type(sk), (idx)))
-#define sk_SCT_new(cmp) ((STACK_OF(SCT) *)OPENSSL_sk_new(ossl_check_SCT_compfunc_type(cmp)))
-#define sk_SCT_new_null() ((STACK_OF(SCT) *)OPENSSL_sk_new_null())
-#define sk_SCT_new_reserve(cmp, n) ((STACK_OF(SCT) *)OPENSSL_sk_new_reserve(ossl_check_SCT_compfunc_type(cmp), (n)))
+#define sk_SCT_value(sk, idx) ((SCT *) OPENSSL_sk_value(ossl_check_const_SCT_sk_type(sk), (idx)))
+#define sk_SCT_new(cmp) ((STACK_OF(SCT) *) OPENSSL_sk_new(ossl_check_SCT_compfunc_type(cmp)))
+#define sk_SCT_new_null() ((STACK_OF(SCT) *) OPENSSL_sk_new_null())
+#define sk_SCT_new_reserve(cmp, n) ((STACK_OF(SCT) *) OPENSSL_sk_new_reserve(ossl_check_SCT_compfunc_type(cmp), (n)))
 #define sk_SCT_reserve(sk, n) OPENSSL_sk_reserve(ossl_check_SCT_sk_type(sk), (n))
 #define sk_SCT_free(sk) OPENSSL_sk_free(ossl_check_SCT_sk_type(sk))
 #define sk_SCT_zero(sk) OPENSSL_sk_zero(ossl_check_SCT_sk_type(sk))
-#define sk_SCT_delete(sk, i) ((SCT *)OPENSSL_sk_delete(ossl_check_SCT_sk_type(sk), (i)))
-#define sk_SCT_delete_ptr(sk, ptr) ((SCT *)OPENSSL_sk_delete_ptr(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr)))
+#define sk_SCT_delete(sk, i) ((SCT *) OPENSSL_sk_delete(ossl_check_SCT_sk_type(sk), (i)))
+#define sk_SCT_delete_ptr(sk, ptr) ((SCT *) OPENSSL_sk_delete_ptr(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr)))
 #define sk_SCT_push(sk, ptr) OPENSSL_sk_push(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr))
 #define sk_SCT_unshift(sk, ptr) OPENSSL_sk_unshift(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr))
-#define sk_SCT_pop(sk) ((SCT *)OPENSSL_sk_pop(ossl_check_SCT_sk_type(sk)))
-#define sk_SCT_shift(sk) ((SCT *)OPENSSL_sk_shift(ossl_check_SCT_sk_type(sk)))
-#define sk_SCT_pop_free(sk, freefunc) OPENSSL_sk_pop_free(ossl_check_SCT_sk_type(sk),ossl_check_SCT_freefunc_type(freefunc))
+#define sk_SCT_pop(sk) ((SCT *) OPENSSL_sk_pop(ossl_check_SCT_sk_type(sk)))
+#define sk_SCT_shift(sk) ((SCT *) OPENSSL_sk_shift(ossl_check_SCT_sk_type(sk)))
+#define sk_SCT_pop_free(sk, freefunc) OPENSSL_sk_pop_free(ossl_check_SCT_sk_type(sk), ossl_check_SCT_freefunc_type(freefunc))
 #define sk_SCT_insert(sk, ptr, idx) OPENSSL_sk_insert(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr), (idx))
-#define sk_SCT_set(sk, idx, ptr) ((SCT *)OPENSSL_sk_set(ossl_check_SCT_sk_type(sk), (idx), ossl_check_SCT_type(ptr)))
+#define sk_SCT_set(sk, idx, ptr) ((SCT *) OPENSSL_sk_set(ossl_check_SCT_sk_type(sk), (idx), ossl_check_SCT_type(ptr)))
 #define sk_SCT_find(sk, ptr) OPENSSL_sk_find(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr))
 #define sk_SCT_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr))
 #define sk_SCT_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_SCT_sk_type(sk), ossl_check_SCT_type(ptr), pnum)
 #define sk_SCT_sort(sk) OPENSSL_sk_sort(ossl_check_SCT_sk_type(sk))
 #define sk_SCT_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_SCT_sk_type(sk))
-#define sk_SCT_dup(sk) ((STACK_OF(SCT) *)OPENSSL_sk_dup(ossl_check_const_SCT_sk_type(sk)))
-#define sk_SCT_deep_copy(sk, copyfunc, freefunc) ((STACK_OF(SCT) *)OPENSSL_sk_deep_copy(ossl_check_const_SCT_sk_type(sk), ossl_check_SCT_copyfunc_type(copyfunc), ossl_check_SCT_freefunc_type(freefunc)))
-#define sk_SCT_set_cmp_func(sk, cmp) ((sk_SCT_compfunc)OPENSSL_sk_set_cmp_func(ossl_check_SCT_sk_type(sk), ossl_check_SCT_compfunc_type(cmp)))
+#define sk_SCT_dup(sk) ((STACK_OF(SCT) *) OPENSSL_sk_dup(ossl_check_const_SCT_sk_type(sk)))
+#define sk_SCT_deep_copy(sk, copyfunc, freefunc) ((STACK_OF(SCT) *) OPENSSL_sk_deep_copy(ossl_check_const_SCT_sk_type(sk), ossl_check_SCT_copyfunc_type(copyfunc), ossl_check_SCT_freefunc_type(freefunc)))
+#define sk_SCT_set_cmp_func(sk, cmp) ((sk_SCT_compfunc) OPENSSL_sk_set_cmp_func(ossl_check_SCT_sk_type(sk), ossl_check_SCT_compfunc_type(cmp)))
 SKM_DEFINE_STACK_OF_INTERNAL(CTLOG, CTLOG, CTLOG)
 #define sk_CTLOG_num(sk) OPENSSL_sk_num(ossl_check_const_CTLOG_sk_type(sk))
-#define sk_CTLOG_value(sk, idx) ((CTLOG *)OPENSSL_sk_value(ossl_check_const_CTLOG_sk_type(sk), (idx)))
-#define sk_CTLOG_new(cmp) ((STACK_OF(CTLOG) *)OPENSSL_sk_new(ossl_check_CTLOG_compfunc_type(cmp)))
-#define sk_CTLOG_new_null() ((STACK_OF(CTLOG) *)OPENSSL_sk_new_null())
-#define sk_CTLOG_new_reserve(cmp, n) ((STACK_OF(CTLOG) *)OPENSSL_sk_new_reserve(ossl_check_CTLOG_compfunc_type(cmp), (n)))
+#define sk_CTLOG_value(sk, idx) ((CTLOG *) OPENSSL_sk_value(ossl_check_const_CTLOG_sk_type(sk), (idx)))
+#define sk_CTLOG_new(cmp) ((STACK_OF(CTLOG) *) OPENSSL_sk_new(ossl_check_CTLOG_compfunc_type(cmp)))
+#define sk_CTLOG_new_null() ((STACK_OF(CTLOG) *) OPENSSL_sk_new_null())
+#define sk_CTLOG_new_reserve(cmp, n) ((STACK_OF(CTLOG) *) OPENSSL_sk_new_reserve(ossl_check_CTLOG_compfunc_type(cmp), (n)))
 #define sk_CTLOG_reserve(sk, n) OPENSSL_sk_reserve(ossl_check_CTLOG_sk_type(sk), (n))
 #define sk_CTLOG_free(sk) OPENSSL_sk_free(ossl_check_CTLOG_sk_type(sk))
 #define sk_CTLOG_zero(sk) OPENSSL_sk_zero(ossl_check_CTLOG_sk_type(sk))
-#define sk_CTLOG_delete(sk, i) ((CTLOG *)OPENSSL_sk_delete(ossl_check_CTLOG_sk_type(sk), (i)))
-#define sk_CTLOG_delete_ptr(sk, ptr) ((CTLOG *)OPENSSL_sk_delete_ptr(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr)))
+#define sk_CTLOG_delete(sk, i) ((CTLOG *) OPENSSL_sk_delete(ossl_check_CTLOG_sk_type(sk), (i)))
+#define sk_CTLOG_delete_ptr(sk, ptr) ((CTLOG *) OPENSSL_sk_delete_ptr(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr)))
 #define sk_CTLOG_push(sk, ptr) OPENSSL_sk_push(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr))
 #define sk_CTLOG_unshift(sk, ptr) OPENSSL_sk_unshift(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr))
-#define sk_CTLOG_pop(sk) ((CTLOG *)OPENSSL_sk_pop(ossl_check_CTLOG_sk_type(sk)))
-#define sk_CTLOG_shift(sk) ((CTLOG *)OPENSSL_sk_shift(ossl_check_CTLOG_sk_type(sk)))
-#define sk_CTLOG_pop_free(sk, freefunc) OPENSSL_sk_pop_free(ossl_check_CTLOG_sk_type(sk),ossl_check_CTLOG_freefunc_type(freefunc))
+#define sk_CTLOG_pop(sk) ((CTLOG *) OPENSSL_sk_pop(ossl_check_CTLOG_sk_type(sk)))
+#define sk_CTLOG_shift(sk) ((CTLOG *) OPENSSL_sk_shift(ossl_check_CTLOG_sk_type(sk)))
+#define sk_CTLOG_pop_free(sk, freefunc) OPENSSL_sk_pop_free(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_freefunc_type(freefunc))
 #define sk_CTLOG_insert(sk, ptr, idx) OPENSSL_sk_insert(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr), (idx))
-#define sk_CTLOG_set(sk, idx, ptr) ((CTLOG *)OPENSSL_sk_set(ossl_check_CTLOG_sk_type(sk), (idx), ossl_check_CTLOG_type(ptr)))
+#define sk_CTLOG_set(sk, idx, ptr) ((CTLOG *) OPENSSL_sk_set(ossl_check_CTLOG_sk_type(sk), (idx), ossl_check_CTLOG_type(ptr)))
 #define sk_CTLOG_find(sk, ptr) OPENSSL_sk_find(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr))
 #define sk_CTLOG_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr))
 #define sk_CTLOG_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_type(ptr), pnum)
 #define sk_CTLOG_sort(sk) OPENSSL_sk_sort(ossl_check_CTLOG_sk_type(sk))
 #define sk_CTLOG_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_CTLOG_sk_type(sk))
-#define sk_CTLOG_dup(sk) ((STACK_OF(CTLOG) *)OPENSSL_sk_dup(ossl_check_const_CTLOG_sk_type(sk)))
-#define sk_CTLOG_deep_copy(sk, copyfunc, freefunc) ((STACK_OF(CTLOG) *)OPENSSL_sk_deep_copy(ossl_check_const_CTLOG_sk_type(sk), ossl_check_CTLOG_copyfunc_type(copyfunc), ossl_check_CTLOG_freefunc_type(freefunc)))
-#define sk_CTLOG_set_cmp_func(sk, cmp) ((sk_CTLOG_compfunc)OPENSSL_sk_set_cmp_func(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_compfunc_type(cmp)))
-
+#define sk_CTLOG_dup(sk) ((STACK_OF(CTLOG) *) OPENSSL_sk_dup(ossl_check_const_CTLOG_sk_type(sk)))
+#define sk_CTLOG_deep_copy(sk, copyfunc, freefunc) ((STACK_OF(CTLOG) *) OPENSSL_sk_deep_copy(ossl_check_const_CTLOG_sk_type(sk), ossl_check_CTLOG_copyfunc_type(copyfunc), ossl_check_CTLOG_freefunc_type(freefunc)))
+#define sk_CTLOG_set_cmp_func(sk, cmp) ((sk_CTLOG_compfunc) OPENSSL_sk_set_cmp_func(ossl_check_CTLOG_sk_type(sk), ossl_check_CTLOG_compfunc_type(cmp)))
 
 
 typedef enum {
@@ -144,7 +142,7 @@ CT_POLICY_EVAL_CTX *CT_POLICY_EVAL_CTX_new(void);
 void CT_POLICY_EVAL_CTX_free(CT_POLICY_EVAL_CTX *ctx);
 
 /* Gets the peer certificate that the SCTs are for */
-X509* CT_POLICY_EVAL_CTX_get0_cert(const CT_POLICY_EVAL_CTX *ctx);
+X509 *CT_POLICY_EVAL_CTX_get0_cert(const CT_POLICY_EVAL_CTX *ctx);
 
 /*
  * Sets the certificate associated with the received SCTs.
@@ -154,7 +152,7 @@ X509* CT_POLICY_EVAL_CTX_get0_cert(const CT_POLICY_EVAL_CTX *ctx);
 int CT_POLICY_EVAL_CTX_set1_cert(CT_POLICY_EVAL_CTX *ctx, X509 *cert);
 
 /* Gets the issuer of the aforementioned certificate */
-X509* CT_POLICY_EVAL_CTX_get0_issuer(const CT_POLICY_EVAL_CTX *ctx);
+X509 *CT_POLICY_EVAL_CTX_get0_issuer(const CT_POLICY_EVAL_CTX *ctx);
 
 /*
  * Sets the issuer of the certificate associated with the received SCTs.
@@ -215,7 +213,7 @@ void SCT_free(SCT *sct);
  * Free a stack of SCTs, and the underlying SCTs themselves.
  * Intended to be compatible with X509V3_EXT_FREE.
  */
-void SCT_LIST_free(STACK_OF(SCT) *a);
+void SCT_LIST_free(STACK_OF(SCT) * a);
 
 /*
  * Returns the version of the SCT.
@@ -358,7 +356,7 @@ void SCT_print(const SCT *sct, BIO *out, int indent, const CTLOG_STORE *logs);
  * If |logs| is not NULL, it will be used to lookup the CT log that each SCT
  * came from, so that the log names can be printed.
  */
-void SCT_LIST_print(const STACK_OF(SCT) *sct_list, BIO *out, int indent,
+void SCT_LIST_print(const STACK_OF(SCT) * sct_list, BIO *out, int indent,
                     const char *separator, const CTLOG_STORE *logs);
 
 /*
@@ -383,7 +381,7 @@ __owur int SCT_validate(SCT *sct, const CT_POLICY_EVAL_CTX *ctx);
  * Returns 0 if at least one SCT is invalid or could not be verified.
  * Returns a negative integer if an error occurs.
  */
-__owur int SCT_LIST_validate(const STACK_OF(SCT) *scts,
+__owur int SCT_LIST_validate(const STACK_OF(SCT) * scts,
                              CT_POLICY_EVAL_CTX *ctx);
 
 
@@ -403,7 +401,7 @@ __owur int SCT_LIST_validate(const STACK_OF(SCT) *scts,
  * Returns < 0 on error, >= 0 indicating bytes written (or would have been)
  * on success.
  */
-__owur int i2o_SCT_LIST(const STACK_OF(SCT) *a, unsigned char **pp);
+__owur int i2o_SCT_LIST(const STACK_OF(SCT) * a, unsigned char **pp);
 
 /*
  * Convert TLS format SCT list to a stack of SCTs.
@@ -415,8 +413,8 @@ __owur int i2o_SCT_LIST(const STACK_OF(SCT) *a, unsigned char **pp);
  * Upon failure, a NULL pointer will be returned, and the position of "*pp" is
  * not defined.
  */
-STACK_OF(SCT) *o2i_SCT_LIST(STACK_OF(SCT) **a, const unsigned char **pp,
-                            size_t len);
+STACK_OF(SCT) * o2i_SCT_LIST(STACK_OF(SCT) * *a, const unsigned char **pp,
+                             size_t len);
 
 /*
  * Serialize (to DER format) a stack of SCTs and return the length.
@@ -430,7 +428,7 @@ STACK_OF(SCT) *o2i_SCT_LIST(STACK_OF(SCT) **a, const unsigned char **pp,
  * Returns < 0 on error, >= 0 indicating bytes written (or would have been)
  * on success.
  */
-__owur int i2d_SCT_LIST(const STACK_OF(SCT) *a, unsigned char **pp);
+__owur int i2d_SCT_LIST(const STACK_OF(SCT) * a, unsigned char **pp);
 
 /*
  * Parses an SCT list in DER format and returns it.
@@ -442,8 +440,8 @@ __owur int i2d_SCT_LIST(const STACK_OF(SCT) *a, unsigned char **pp);
  * Upon failure, a NULL pointer will be returned, and the position of "*pp" is
  * not defined.
  */
-STACK_OF(SCT) *d2i_SCT_LIST(STACK_OF(SCT) **a, const unsigned char **pp,
-                            long len);
+STACK_OF(SCT) * d2i_SCT_LIST(STACK_OF(SCT) * *a, const unsigned char **pp,
+                             long len);
 
 /*
  * Serialize (to TLS format) an |sct| and write it to |out|.
@@ -507,7 +505,7 @@ int CTLOG_new_from_base64_ex(CTLOG **ct_log, const char *pkey_base64,
  * library context and property query string are used.
  * Returns 1 on success, 0 on failure.
  */
-int CTLOG_new_from_base64(CTLOG ** ct_log,
+int CTLOG_new_from_base64(CTLOG **ct_log,
                           const char *pkey_base64, const char *name);
 
 /*
@@ -566,8 +564,8 @@ __owur int CTLOG_STORE_load_file(CTLOG_STORE *store, const char *file);
  */
 __owur int CTLOG_STORE_load_default_file(CTLOG_STORE *store);
 
-#  ifdef  __cplusplus
+#ifdef __cplusplus
 }
-#  endif
-# endif
+#endif
+#endif
 #endif

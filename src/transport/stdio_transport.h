@@ -1,8 +1,8 @@
 // src/transport/stdio_transport.h
 #pragma once
 #include <functional>
-#include <string>
 #include <memory>
+#include <string>
 
 // Forward declarations
 namespace mcp::business {

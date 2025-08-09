@@ -4,10 +4,10 @@
 #include "ssl_session.h"
 #include <asio.hpp>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include <memory>
 
 namespace mcp::transport {
 
@@ -43,7 +43,7 @@ namespace mcp::transport {
         asio::awaitable<void> handle_request(
                 std::shared_ptr<Session> session,
                 const std::string &raw_request);
-                
+
         // Main request handling logic for SSL sessions
         asio::awaitable<void> handle_request(
                 std::shared_ptr<SslSession> session,
@@ -54,7 +54,7 @@ namespace mcp::transport {
                 std::shared_ptr<Session> session,
                 const std::string &body,
                 int status_code);
-                
+
         // Send HTTPS response
         asio::awaitable<void> send_http_response(
                 std::shared_ptr<SslSession> session,
@@ -84,7 +84,7 @@ namespace mcp::transport {
                 std::shared_ptr<Session> session,
                 const HttpRequest &req,
                 size_t already_read);
-                
+
         // Fully read and discard remaining request body for SSL sessions
         asio::awaitable<void> discard_remaining_request_body(
                 std::shared_ptr<SslSession> session,

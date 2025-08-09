@@ -1,11 +1,11 @@
 // src/transport/stdio_transport.cpp
 #include "stdio_transport.h"
-#include "core/logger.h"
 #include "business/tool_registry.h"
+#include "core/logger.h"
 #include "protocol/json_rpc.h"
 #include <iostream>
-#include <thread>
 #include <sstream>
+#include <thread>
 
 namespace mcp::transport {
 

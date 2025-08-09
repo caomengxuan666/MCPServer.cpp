@@ -46,16 +46,16 @@ int main() {
         // Step 5: Build the MCP server instance using the configuration.
         // Configure transport layers and plugin directory based on settings.
         auto server = mcp::core::MCPserver::Builder{}
-                              .with_plugin_path(config.server.plugin_dir)               // Load plugins from specified directory
-                              .with_address(address)                                    // Set server address
-                              .with_port(config.server.http_port)                       // Set HTTP port
-                              .enableHttpTransport(config.server.enable_http)           // Enable HTTP transport if configured
-                              .enableStdioTransport(config.server.enable_stdio)         // Enable stdio transport if configured
-                              .enableHttpsTransport(config.server.enable_https)         // Enable HTTPS transport if configured
-                              .with_https_port(config.server.https_port)                // Set HTTPS port
-                              .with_ssl_certificates(config.server.ssl_cert_file, 
-                                                    config.server.ssl_key_file)         // Set SSL certificate files
-                              .build();                                                 // Construct the server instance
+                              .with_plugin_path(config.server.plugin_dir)      // Load plugins from specified directory
+                              .with_address(address)                           // Set server address
+                              .with_port(config.server.http_port)              // Set HTTP port
+                              .enableHttpTransport(config.server.enable_http)  // Enable HTTP transport if configured
+                              .enableStdioTransport(config.server.enable_stdio)// Enable stdio transport if configured
+                              .enableHttpsTransport(config.server.enable_https)// Enable HTTPS transport if configured
+                              .with_https_port(config.server.https_port)       // Set HTTPS port
+                              .with_ssl_certificates(config.server.ssl_cert_file,
+                                                     config.server.ssl_key_file)// Set SSL certificate files
+                              .build();                                         // Construct the server instance
 
         // Notify that the server is ready to accept connections.
         MCP_INFO("MCPServer.cpp is ready.");

@@ -8,14 +8,14 @@
  */
 
 #ifndef OPENSSL_PROVIDER_H
-# define OPENSSL_PROVIDER_H
-# pragma once
+#define OPENSSL_PROVIDER_H
+#pragma once
 
-# include <openssl/core.h>
+#include <openssl/core.h>
 
-# ifdef __cplusplus
+#ifdef __cplusplus
 extern "C" {
-# endif
+#endif
 
 /* Set and Get a library context search path */
 int OSSL_PROVIDER_set_default_search_path(OSSL_LIB_CTX *, const char *path);
@@ -59,8 +59,8 @@ int OSSL_PROVIDER_add_builtin(OSSL_LIB_CTX *, const char *name,
 /* Information */
 const char *OSSL_PROVIDER_get0_name(const OSSL_PROVIDER *prov);
 
-# ifdef __cplusplus
+#ifdef __cplusplus
 }
-# endif
+#endif
 
 #endif

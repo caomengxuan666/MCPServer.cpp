@@ -8,39 +8,39 @@
  */
 
 #ifndef OPENSSL_MODES_H
-# define OPENSSL_MODES_H
-# pragma once
+#define OPENSSL_MODES_H
+#pragma once
 
-# include <openssl/macros.h>
-# ifndef OPENSSL_NO_DEPRECATED_3_0
-#  define HEADER_MODES_H
-# endif
+#include <openssl/macros.h>
+#ifndef OPENSSL_NO_DEPRECATED_3_0
+#define HEADER_MODES_H
+#endif
 
-# include <stddef.h>
-# include <openssl/types.h>
+#include <openssl/types.h>
+#include <stddef.h>
 
-# ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
-# endif
-typedef void (*block128_f) (const unsigned char in[16],
-                            unsigned char out[16], const void *key);
+#endif
+typedef void (*block128_f)(const unsigned char in[16],
+                           unsigned char out[16], const void *key);
 
-typedef void (*cbc128_f) (const unsigned char *in, unsigned char *out,
-                          size_t len, const void *key,
-                          unsigned char ivec[16], int enc);
+typedef void (*cbc128_f)(const unsigned char *in, unsigned char *out,
+                         size_t len, const void *key,
+                         unsigned char ivec[16], int enc);
 
-typedef void (*ecb128_f) (const unsigned char *in, unsigned char *out,
-                          size_t len, const void *key,
-                          int enc);
+typedef void (*ecb128_f)(const unsigned char *in, unsigned char *out,
+                         size_t len, const void *key,
+                         int enc);
 
-typedef void (*ctr128_f) (const unsigned char *in, unsigned char *out,
-                          size_t blocks, const void *key,
-                          const unsigned char ivec[16]);
+typedef void (*ctr128_f)(const unsigned char *in, unsigned char *out,
+                         size_t blocks, const void *key,
+                         const unsigned char ivec[16]);
 
-typedef void (*ccm128_f) (const unsigned char *in, unsigned char *out,
-                          size_t blocks, const void *key,
-                          const unsigned char ivec[16],
-                          unsigned char cmac[16]);
+typedef void (*ccm128_f)(const unsigned char *in, unsigned char *out,
+                         size_t blocks, const void *key,
+                         const unsigned char ivec[16],
+                         unsigned char cmac[16]);
 
 void CRYPTO_cbc128_encrypt(const unsigned char *in, unsigned char *out,
                            size_t len, const void *key,
@@ -180,15 +180,15 @@ size_t CRYPTO_128_unwrap_pad(void *key, const unsigned char *icv,
                              unsigned char *out, const unsigned char *in,
                              size_t inlen, block128_f block);
 
-# ifndef OPENSSL_NO_OCB
+#ifndef OPENSSL_NO_OCB
 typedef struct ocb128_context OCB128_CONTEXT;
 
-typedef void (*ocb128_f) (const unsigned char *in, unsigned char *out,
-                          size_t blocks, const void *key,
-                          size_t start_block_num,
-                          unsigned char offset_i[16],
-                          const unsigned char L_[][16],
-                          unsigned char checksum[16]);
+typedef void (*ocb128_f)(const unsigned char *in, unsigned char *out,
+                         size_t blocks, const void *key,
+                         size_t start_block_num,
+                         unsigned char offset_i[16],
+                         const unsigned char L_[][16],
+                         unsigned char checksum[16]);
 
 OCB128_CONTEXT *CRYPTO_ocb128_new(void *keyenc, void *keydec,
                                   block128_f encrypt, block128_f decrypt,
@@ -210,10 +210,10 @@ int CRYPTO_ocb128_finish(OCB128_CONTEXT *ctx, const unsigned char *tag,
                          size_t len);
 int CRYPTO_ocb128_tag(OCB128_CONTEXT *ctx, unsigned char *tag, size_t len);
 void CRYPTO_ocb128_cleanup(OCB128_CONTEXT *ctx);
-# endif                          /* OPENSSL_NO_OCB */
+#endif /* OPENSSL_NO_OCB */
 
-# ifdef  __cplusplus
+#ifdef __cplusplus
 }
-# endif
+#endif
 
 #endif

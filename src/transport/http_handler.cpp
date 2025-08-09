@@ -119,7 +119,7 @@ namespace mcp::transport {
         }
         co_return;
     }
-    
+
     // Clean existing buffer for SSL sessions
     asio::awaitable<void> HttpHandler::discard_existing_buffer(std::shared_ptr<SslSession> session) {
         // Check if there is pending data to send, discard if exists
@@ -238,7 +238,7 @@ namespace mcp::transport {
 
         co_return;
     }
-    
+
     /**
     * @brief Sends an HTTPS response to the client over the specified SSL session.
     * 
@@ -450,7 +450,7 @@ namespace mcp::transport {
             co_await send_http_response(session, error_response, 500);
         }
     }
-    
+
     // Main request handling logic for SSL sessions
     awaitable<void> HttpHandler::handle_request(
             std::shared_ptr<SslSession> session,
@@ -467,8 +467,8 @@ namespace mcp::transport {
             for (const auto &[key, value]: req.headers) {
                 bytes_parsed += key.size() + 2 + value.size() + 2;// Each header length
             }
-            bytes_parsed += 2;                 // Empty line ending headers
-            bytes_parsed += req.body.size();   // Body length
+            bytes_parsed += 2;                // Empty line ending headers
+            bytes_parsed += req.body.size();  // Body length
             session->set_headers(req.headers);//save headers
         }
 
@@ -603,7 +603,7 @@ namespace mcp::transport {
         }
         co_return;
     }
-    
+
     // Helper function: fully read and discard remaining request body for SSL sessions (avoid buffer residue)
     asio::awaitable<void> HttpHandler::discard_remaining_request_body(
             std::shared_ptr<SslSession> session,

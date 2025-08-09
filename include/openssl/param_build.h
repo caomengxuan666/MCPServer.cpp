@@ -9,15 +9,15 @@
  */
 
 #ifndef OPENSSL_PARAM_BUILD_H
-# define OPENSSL_PARAM_BUILD_H
-# pragma once
+#define OPENSSL_PARAM_BUILD_H
+#pragma once
 
-# include <openssl/params.h>
-# include <openssl/types.h>
+#include <openssl/params.h>
+#include <openssl/types.h>
 
-# ifdef __cplusplus
+#ifdef __cplusplus
 extern "C" {
-# endif
+#endif
 
 OSSL_PARAM_BLD *OSSL_PARAM_BLD_new(void);
 OSSL_PARAM *OSSL_PARAM_BLD_to_param(OSSL_PARAM_BLD *bld);
@@ -57,7 +57,7 @@ int OSSL_PARAM_BLD_push_octet_string(OSSL_PARAM_BLD *bld, const char *key,
 int OSSL_PARAM_BLD_push_octet_ptr(OSSL_PARAM_BLD *bld, const char *key,
                                   void *buf, size_t bsize);
 
-# ifdef __cplusplus
+#ifdef __cplusplus
 }
-# endif
-#endif  /* OPENSSL_PARAM_BUILD_H */
+#endif
+#endif /* OPENSSL_PARAM_BUILD_H */

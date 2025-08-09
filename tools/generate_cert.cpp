@@ -147,7 +147,7 @@ bool save_certificate(X509 *x509, const std::string &filename) {
 }
 
 int main(int argc, char *argv[]) {
-#ifdef _WIN32  
+#ifdef _WIN32
     OPENSSL_Applink();
 #endif
     // Default values

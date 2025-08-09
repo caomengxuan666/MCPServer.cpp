@@ -14,8 +14,8 @@ namespace mcp::transport {
 
     class HttpsTransport {
     public:
-        explicit HttpsTransport(const std::string &address, unsigned short port, 
-                               const std::string& cert_file, const std::string& private_key_file);
+        explicit HttpsTransport(const std::string &address, unsigned short port,
+                                const std::string &cert_file, const std::string &private_key_file);
         ~HttpsTransport();
 
         /**

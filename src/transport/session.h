@@ -14,7 +14,7 @@
 namespace mcp::transport {
     class HttpHandler;
     class SslSession;
-}
+}// namespace mcp::transport
 
 namespace mcp::transport {
 
@@ -55,7 +55,7 @@ namespace mcp::transport {
         /**
          * @brief get the underlying socket.
          */
-        asio::ip::tcp::socket& get_socket() { return socket_; }
+        asio::ip::tcp::socket &get_socket() { return socket_; }
 
         void set_accept_header(const std::string &header) { accept_header_ = header; }
         const std::string &get_accept_header() const { return accept_header_; }

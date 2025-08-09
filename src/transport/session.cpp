@@ -115,12 +115,12 @@ namespace mcp::transport {
         if (!closed_ && socket_.is_open()) {
             asio::error_code ec;
             socket_.cancel(ec);
-            
+
             std::array<char, 8192> discard_buf;
             while (socket_.available(ec) > 0 && !ec) {
                 socket_.read_some(asio::buffer(discard_buf), ec);
             }
-            
+
             socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
             socket_.close(ec);
             std::fill(buffer_.begin(), buffer_.end(), static_cast<char>(0));
@@ -131,7 +131,7 @@ namespace mcp::transport {
     void Session::clear_buffer() {
         std::fill(buffer_.begin(), buffer_.end(), static_cast<char>(0));
     }
-    
+
     bool Session::is_closed() const {
         return !socket_.is_open();
     }

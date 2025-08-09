@@ -10,12 +10,12 @@ using asio::use_awaitable;
 namespace mcp::transport {
 
     HttpsTransport::HttpsTransport(const std::string &address, unsigned short port,
-                                   const std::string& cert_file, const std::string& private_key_file)
+                                   const std::string &cert_file, const std::string &private_key_file)
         : io_context_(),
           acceptor_(io_context_, asio::ip::tcp::endpoint(asio::ip::make_address(address), port)),
           ssl_context_(asio::ssl::context::tlsv12),
           work_guard_(asio::make_work_guard(io_context_)) {
-        
+
         // Check if certificate and private key files exist
         if (!std::filesystem::exists(cert_file)) {
             throw std::runtime_error("SSL certificate file not found: " + cert_file);
@@ -26,14 +26,13 @@ namespace mcp::transport {
 
         // Configure SSL context
         ssl_context_.set_options(
-            asio::ssl::context::default_workarounds |
-            asio::ssl::context::no_sslv2 |
-            asio::ssl::context::no_sslv3 |
-            asio::ssl::context::no_tlsv1 |
-            asio::ssl::context::no_tlsv1_1 |
-            asio::ssl::context::single_dh_use
-        );
-        
+                asio::ssl::context::default_workarounds |
+                asio::ssl::context::no_sslv2 |
+                asio::ssl::context::no_sslv3 |
+                asio::ssl::context::no_tlsv1 |
+                asio::ssl::context::no_tlsv1_1 |
+                asio::ssl::context::single_dh_use);
+
         // Load certificate and private key
         asio::error_code ec;
         ssl_context_.use_certificate_chain_file(cert_file, ec);
@@ -41,13 +40,13 @@ namespace mcp::transport {
             MCP_ERROR("Failed to load certificate file: {} - Error: {}", cert_file, ec.message());
             throw std::runtime_error("Failed to load certificate file: " + cert_file + " - Error: " + ec.message());
         }
-        
+
         ssl_context_.use_private_key_file(private_key_file, asio::ssl::context::pem, ec);
         if (ec) {
             MCP_ERROR("Failed to load private key file: {} - Error: {}", private_key_file, ec.message());
             throw std::runtime_error("Failed to load private key file: " + private_key_file + " - Error: " + ec.message());
         }
-        
+
         MCP_INFO("HTTPS Transport initialized with cert: {}, key: {}", cert_file, private_key_file);
     }
 
@@ -90,7 +89,7 @@ namespace mcp::transport {
         std::thread([this]() {
             try {
                 io_context_.run();
-            } catch (const std::exception& e) {
+            } catch (const std::exception &e) {
                 MCP_ERROR("Error in HTTPS io_context: {}", e.what());
             }
         }).detach();

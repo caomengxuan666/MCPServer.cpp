@@ -22,8 +22,8 @@ namespace mcp::transport {
 
     bool HttpTransport::start(MessageCallback on_message) {
         handler_ = std::make_unique<HttpHandler>(std::move(on_message));
-        MCP_INFO("Streamable HTTP Transport started on {}:{}", 
-                 acceptor_.local_endpoint().address().to_string(), 
+        MCP_INFO("Streamable HTTP Transport started on {}:{}",
+                 acceptor_.local_endpoint().address().to_string(),
                  acceptor_.local_endpoint().port());
 
         // launch the acceptor to handle incoming connections

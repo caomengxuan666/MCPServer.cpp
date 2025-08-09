@@ -538,7 +538,7 @@ namespace mcp::routers {
                 } else {
                     // Convert to MCP format
                     nlohmann::json content_array = nlohmann::json::array();
-                    
+
                     // Check if result is a string (text content) or object
                     if (result->is_string()) {
                         // Pure text content from plugin
@@ -550,7 +550,7 @@ namespace mcp::routers {
                         // Other JSON content
                         content_array.push_back({{"type", "text"}, {"text", result->dump()}});
                     }
-                    
+
                     resp.result = nlohmann::json{{"content", content_array}};
                 }
                 return resp;

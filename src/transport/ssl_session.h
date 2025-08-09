@@ -12,7 +12,6 @@
 #include <memory>
 
 
-
 namespace mcp::transport {
     class HttpHandler;
 }

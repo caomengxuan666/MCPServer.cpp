@@ -24,7 +24,7 @@ static std::string read_file(const std::string &path) {
         std::stringstream buffer;
         buffer << f.rdbuf();
         return nlohmann::json{{"content", buffer.str()}}.dump();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code
@@ -46,7 +46,7 @@ static std::string write_file(const std::string &path, const std::string &conten
         f << content;
         f.close();
         return R"({"result": "success"})";
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
         return nlohmann::json{
                 {"error", {{"code", -32000},// Custom error code

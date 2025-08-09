@@ -8,23 +8,23 @@
  */
 
 #ifndef OPENSSL_ENCODER_H
-# define OPENSSL_ENCODER_H
-# pragma once
+#define OPENSSL_ENCODER_H
+#pragma once
 
-# include <openssl/opensslconf.h>
+#include <openssl/opensslconf.h>
 
-# ifndef OPENSSL_NO_STDIO
-#  include <stdio.h>
-# endif
-# include <stdarg.h>
-# include <stddef.h>
-# include <openssl/encodererr.h>
-# include <openssl/types.h>
-# include <openssl/core.h>
+#ifndef OPENSSL_NO_STDIO
+#include <stdio.h>
+#endif
+#include <openssl/core.h>
+#include <openssl/encodererr.h>
+#include <openssl/types.h>
+#include <stdarg.h>
+#include <stddef.h>
 
-# ifdef __cplusplus
+#ifdef __cplusplus
 extern "C" {
-# endif
+#endif
 
 OSSL_ENCODER *OSSL_ENCODER_fetch(OSSL_LIB_CTX *libctx, const char *name,
                                  const char *properties);
@@ -118,7 +118,7 @@ OSSL_ENCODER_CTX *OSSL_ENCODER_CTX_new_for_pkey(const EVP_PKEY *pkey,
                                                 const char *output_struct,
                                                 const char *propquery);
 
-# ifdef __cplusplus
+#ifdef __cplusplus
 }
-# endif
+#endif
 #endif

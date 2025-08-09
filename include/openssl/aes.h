@@ -8,44 +8,44 @@
  */
 
 #ifndef OPENSSL_AES_H
-# define OPENSSL_AES_H
-# pragma once
+#define OPENSSL_AES_H
+#pragma once
 
-# include <openssl/macros.h>
-# ifndef OPENSSL_NO_DEPRECATED_3_0
-#  define HEADER_AES_H
-# endif
+#include <openssl/macros.h>
+#ifndef OPENSSL_NO_DEPRECATED_3_0
+#define HEADER_AES_H
+#endif
 
-# include <openssl/opensslconf.h>
+#include <openssl/opensslconf.h>
 
-# include <stddef.h>
-# ifdef  __cplusplus
+#include <stddef.h>
+#ifdef __cplusplus
 extern "C" {
-# endif
+#endif
 
-# define AES_BLOCK_SIZE 16
+#define AES_BLOCK_SIZE 16
 
-# ifndef OPENSSL_NO_DEPRECATED_3_0
+#ifndef OPENSSL_NO_DEPRECATED_3_0
 
-#  define AES_ENCRYPT     1
-#  define AES_DECRYPT     0
+#define AES_ENCRYPT 1
+#define AES_DECRYPT 0
 
-#  define AES_MAXNR 14
+#define AES_MAXNR 14
 
 
 /* This should be a hidden type, but EVP requires that the size be known */
 struct aes_key_st {
-#  ifdef AES_LONG
+#ifdef AES_LONG
     unsigned long rd_key[4 * (AES_MAXNR + 1)];
-#  else
+#else
     unsigned int rd_key[4 * (AES_MAXNR + 1)];
-#  endif
+#endif
     int rounds;
 };
 typedef struct aes_key_st AES_KEY;
 
-# endif
-# ifndef OPENSSL_NO_DEPRECATED_3_0
+#endif
+#ifndef OPENSSL_NO_DEPRECATED_3_0
 OSSL_DEPRECATEDIN_3_0 const char *AES_options(void);
 OSSL_DEPRECATEDIN_3_0
 int AES_set_encrypt_key(const unsigned char *userKey, const int bits,
@@ -101,11 +101,11 @@ OSSL_DEPRECATEDIN_3_0
 int AES_unwrap_key(AES_KEY *key, const unsigned char *iv,
                    unsigned char *out, const unsigned char *in,
                    unsigned int inlen);
-# endif
+#endif
 
 
-# ifdef  __cplusplus
+#ifdef __cplusplus
 }
-# endif
+#endif
 
 #endif
