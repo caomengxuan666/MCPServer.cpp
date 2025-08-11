@@ -1,4 +1,10 @@
 #pragma once
+
+#include <unordered_map>
+#if defined(_WIN32) && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0601
+#endif
+
 #include "session.h"
 #include "transport_types.h"
 #include <asio.hpp>

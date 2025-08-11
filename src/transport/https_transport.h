@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(_WIN32) && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0601
+#endif
+
 #include "http_handler.h"
 #include "transport_types.h"
 #include <asio.hpp>

@@ -1,9 +1,14 @@
 #pragma once
 
+#include <unordered_map>
+#if defined(_WIN32) && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0601
+#endif
+
 #include "transport_types.h"
 #include <asio.hpp>
 #include <memory>
-#include <unordered_map>
+
 
 namespace mcp::transport {
     class HttpHandler;
@@ -49,8 +54,6 @@ namespace mcp::transport {
          * @brief Get the underlying socket (implemented by subclasses).
          */
         virtual asio::ip::tcp::socket &get_socket() = 0;
-
-        std::string generate_session_id() noexcept;
 
         void set_accept_header(const std::string &header) { accept_header_ = header; }
         const std::string &get_accept_header() const { return accept_header_; }

@@ -3,6 +3,7 @@
 #include "nlohmann/json.hpp"
 #include "session.h"
 #include "ssl_session.h"
+#include "utils/utf8_encode.h"
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -441,7 +442,7 @@ namespace mcp::transport {
                 co_return;
             }
         } catch (const std::exception &e) {
-            MCP_ERROR("Error handling request: {}", e.what());
+            MCP_ERROR("Error handling request: {}", EnsureUTF8(e.what()));
             error_occurred = true;
             session->close();
         }

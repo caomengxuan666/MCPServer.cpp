@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <fstream>
 
+using asio::use_awaitable;
+
 namespace mcp::transport {
 
     /**
@@ -33,7 +35,6 @@ namespace mcp::transport {
         std::string cert_file_absolute = cert_path.string();
         std::string private_key_file_absolute = key_path.string();
         std::string dh_params_file_absolute = dh_params_path.string();
-
         // Validate certificate files exist
         if (!std::filesystem::exists(cert_file_absolute)) {
             throw std::runtime_error("SSL certificate file not found: " + cert_file_absolute);
@@ -41,16 +42,13 @@ namespace mcp::transport {
         if (!std::filesystem::exists(private_key_file_absolute)) {
             throw std::runtime_error("SSL private key file not found: " + private_key_file_absolute);
         }
-
         if (!std::filesystem::exists(dh_params_file_absolute)) {
             throw std::runtime_error("SSL DH params file not found: " + dh_params_file_absolute);
         }
-
         // Log certificate details
         MCP_DEBUG("SSL certificate file: {}", cert_file_absolute);
         MCP_DEBUG("SSL private key file: {}", private_key_file_absolute);
         MCP_DEBUG("SSL DH params file: {}", dh_params_file_absolute);
-
         // Configure SSL security options
         ssl_context_.set_options(
                 asio::ssl::context::default_workarounds |
@@ -61,7 +59,6 @@ namespace mcp::transport {
                 asio::ssl::context::single_dh_use);
         ssl_context_.set_verify_mode(asio::ssl::verify_none);
         ssl_context_.use_tmp_dh_file(dh_params_file_absolute);
-
         // Load and validate certificates
         load_certificates(cert_file_absolute, private_key_file_absolute);
 
@@ -89,7 +86,7 @@ namespace mcp::transport {
             MCP_ERROR("Failed to open certificate file (invalid handle): {}", cert_file);
             throw std::runtime_error("Certificate file handle invalid");
         }
-        (void) ssl_context_.use_certificate_chain_file(cert_file, ec);
+        ssl_context_.use_certificate_chain_file(cert_file, ec);
         if (ec) {
             MCP_ERROR("Failed to load certificate: {} - {}", cert_file, ec.message());
             throw std::runtime_error("Certificate load failed");
@@ -102,7 +99,7 @@ namespace mcp::transport {
             MCP_ERROR("Failed to open private key file (invalid handle): {}", key_file);
             throw std::runtime_error("Private key file handle invalid");
         }
-        (void) ssl_context_.use_private_key_file(key_file, asio::ssl::context::pem, ec);
+        ssl_context_.use_private_key_file(key_file, asio::ssl::context::pem, ec);
         if (ec) {
             MCP_ERROR("Failed to load private key: {} - {}", key_file, ec.message());
             throw std::runtime_error("Private key load failed");
@@ -189,7 +186,7 @@ namespace mcp::transport {
                 auto session = std::make_shared<SslSession>(
                         std::move(*session_socket),// Transfer socket ownership
                         ssl_context_);
-                (void) session_socket.release();// Prevent double destruction
+                session_socket.release();// Prevent double destruction
 
                 // Final socket validation
                 if (!session->get_stream().lowest_layer().is_open()) {

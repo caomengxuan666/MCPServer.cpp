@@ -2,8 +2,33 @@
 #include "core/logger.h"
 #include "http_handler.h"
 #include <asio/ssl/error.hpp>
+#include <iomanip>
+#include <random>
+
+
+using asio::use_awaitable;
 
 namespace mcp::transport {
+
+    namespace {
+        /**
+         * @brief Generate a random session ID using 128 bits of random data.
+         * @return 32-character hexadecimal string
+         */
+        static std::string generate_session_id() noexcept {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<uint64_t> dist;
+
+            uint64_t part1 = dist(gen);
+            uint64_t part2 = dist(gen);
+
+            std::stringstream ss;
+            ss << std::hex << std::setw(16) << std::setfill('0') << part1
+               << std::hex << std::setw(16) << std::setfill('0') << part2;
+            return ss.str();
+        }
+    }// namespace
 
 
     /**
@@ -20,6 +45,15 @@ namespace mcp::transport {
             MCP_ERROR("SslSession constructed with invalid socket (ID: {})", session_id_);
             throw std::runtime_error("Invalid socket passed to SslSession");
         }
+
+        // Configure SSL security options
+        SSL *ssl = ssl_stream_.native_handle();
+        SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+        SSL_set_options(ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+
+        // Server mode doesn't require client certificates
+        ssl_stream_.set_verify_mode(asio::ssl::verify_none);
+
         MCP_DEBUG("Created new SSL session with ID: {}", session_id_);
     }
 
