@@ -28,9 +28,11 @@ namespace mcp::transport {
         std::filesystem::path executable_dir(mcp::core::getExecutableDirectory());
         std::filesystem::path cert_path = executable_dir / cert_file;
         std::filesystem::path key_path = executable_dir / private_key_file;
+        std::filesystem::path dh_params_path = executable_dir / dh_params_file;
 
         std::string cert_file_absolute = cert_path.string();
         std::string private_key_file_absolute = key_path.string();
+        std::string dh_params_file_absolute = dh_params_path.string();
 
         // Validate certificate files exist
         if (!std::filesystem::exists(cert_file_absolute)) {
@@ -40,9 +42,14 @@ namespace mcp::transport {
             throw std::runtime_error("SSL private key file not found: " + private_key_file_absolute);
         }
 
+        if (!std::filesystem::exists(dh_params_file_absolute)) {
+            throw std::runtime_error("SSL DH params file not found: " + dh_params_file_absolute);
+        }
+
         // Log certificate details
         MCP_DEBUG("SSL certificate file: {}", cert_file_absolute);
         MCP_DEBUG("SSL private key file: {}", private_key_file_absolute);
+        MCP_DEBUG("SSL DH params file: {}", dh_params_file_absolute);
 
         // Configure SSL security options
         ssl_context_.set_options(
@@ -53,12 +60,12 @@ namespace mcp::transport {
                 asio::ssl::context::no_tlsv1_1 |
                 asio::ssl::context::single_dh_use);
         ssl_context_.set_verify_mode(asio::ssl::verify_none);
-        ssl_context_.use_tmp_dh_file(dh_params_file);
+        ssl_context_.use_tmp_dh_file(dh_params_file_absolute);
 
         // Load and validate certificates
         load_certificates(cert_file_absolute, private_key_file_absolute);
 
-        MCP_INFO("HTTPS Transport initialized with cert: {}, key: {}", cert_file_absolute, private_key_file_absolute);
+        MCP_INFO("HTTPS Transport initialized with cert: {}, key: {}, dh: {}", cert_file_absolute, private_key_file_absolute, dh_params_file_absolute);
     }
 
     /**

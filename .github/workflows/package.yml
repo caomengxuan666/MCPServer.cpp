@@ -145,10 +145,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            */*.tar.gz
-            */*.zip
-            */*.deb
-            */*.rpm
-            */*.exe
+            - mcp-server++-*/**.tar.gz
+            - mcp-server++-*/**.zip
+            - mcp-server++-*/**.deb
+            - mcp-server++-*/**.exe
+            - mcp-server++-*/**.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

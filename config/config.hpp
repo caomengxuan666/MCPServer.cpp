@@ -1,12 +1,13 @@
 #ifndef MCP_CONFIG_HPP
 #define MCP_CONFIG_HPP
 
+#include "core/executable_path.h"
 #include "core/logger.h"
-#include "executable_path.h"
 #include "inicpp.hpp"
 #include <filesystem>
 #include <iostream>
 #include <string>
+
 
 
 namespace mcp {
@@ -66,7 +67,7 @@ namespace mcp {
                     config.plugin_dir = server_section["plugin_dir"].String().empty() ? "plugins" : server_section["plugin_dir"].String();
                     config.ssl_cert_file = server_section["ssl_cert_file"].String().empty() ? "certs/server.crt" : server_section["ssl_cert_file"].String();
                     config.ssl_key_file = server_section["ssl_key_file"].String().empty() ? "certs/server.key" : server_section["ssl_key_file"].String();
-                    config.ssl_dh_params_file = server_section["ssl_dh_params_file"].String().empty() ? "certs/dhparams.pem" : server_section["ssh_dh_params_file"].String();
+                    config.ssl_dh_params_file = server_section["ssl_dh_params_file"].String().empty() ? "certs/dh2048.pem" : server_section["ssl_dh_params_file"].String();
 
                     // Numeric values with explicit conversion
                     config.max_file_size = server_section["max_file_size"].String().empty() ? 10485760 : static_cast<size_t>(server_section["max_file_size"]);

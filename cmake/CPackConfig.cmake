@@ -132,16 +132,16 @@ elseif(UNIX)
         if(OS_RELEASE_CONTENT MATCHES "ID=([a-z]*)")
             set(LINUX_ID ${CMAKE_MATCH_1})
         endif()
-        
+
         # Also check for Ubuntu specifically (as it may not always match the ID pattern correctly)
         if(OS_RELEASE_CONTENT MATCHES "ID_LIKE=([a-z]*)")
             set(LINUX_ID_LIKE ${CMAKE_MATCH_1})
         endif()
 
         # Check for Ubuntu/Debian
-        if(LINUX_ID STREQUAL "ubuntu" OR LINUX_ID STREQUAL "debian" OR 
-           LINUX_ID_LIKE STREQUAL "ubuntu" OR LINUX_ID_LIKE STREQUAL "debian" OR
-           OS_RELEASE_CONTENT MATCHES "Ubuntu" OR OS_RELEASE_CONTENT MATCHES "Debian")
+        if(LINUX_ID STREQUAL "ubuntu" OR LINUX_ID STREQUAL "debian" OR
+            LINUX_ID_LIKE STREQUAL "ubuntu" OR LINUX_ID_LIKE STREQUAL "debian" OR
+            OS_RELEASE_CONTENT MATCHES "Ubuntu" OR OS_RELEASE_CONTENT MATCHES "Debian")
             find_program(DPKG_PROGRAM dpkg)
 
             if(DPKG_PROGRAM)
@@ -153,35 +153,62 @@ elseif(UNIX)
                 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
                 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${CPACK_PACKAGE_HOMEPAGE_URL})
                 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6")
-                set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
+
+                set(CPACK_DEBIAN_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.deb")
             else()
                 message(STATUS "dpkg not found, DEB package generation disabled")
             endif()
         endif()
-        
-        # Check for CentOS/RHEL/Fedora
-        if(LINUX_ID STREQUAL "centos" OR LINUX_ID STREQUAL "rhel" OR LINUX_ID STREQUAL "fedora" OR
-           LINUX_ID_LIKE STREQUAL "rhel" OR LINUX_ID_LIKE STREQUAL "fedora" OR
-           OS_RELEASE_CONTENT MATCHES "CentOS" OR OS_RELEASE_CONTENT MATCHES "Red Hat" OR 
-           OS_RELEASE_CONTENT MATCHES "Fedora")
-            find_program(RPM_PROGRAM rpm)
 
-            if(RPM_PROGRAM)
-                message(STATUS "Found rpm: ${RPM_PROGRAM}, enabling RPM package generation")
+        # Check for RPM-based distributions (CentOS, RHEL, Fedora, AlmaLinux, Rocky Linux, OpenSUSE, etc.)
+        if(LINUX_ID STREQUAL "centos" OR LINUX_ID STREQUAL "rhel" OR LINUX_ID STREQUAL "fedora" OR
+            LINUX_ID STREQUAL "almalinux" OR LINUX_ID STREQUAL "rocky" OR LINUX_ID STREQUAL "suse" OR
+            LINUX_ID_LIKE STREQUAL "rhel" OR LINUX_ID_LIKE STREQUAL "fedora" OR LINUX_ID_LIKE STREQUAL "suse" OR
+            OS_RELEASE_CONTENT MATCHES "CentOS" OR OS_RELEASE_CONTENT MATCHES "Red Hat" OR
+            OS_RELEASE_CONTENT MATCHES "Fedora" OR OS_RELEASE_CONTENT MATCHES "AlmaLinux" OR
+            OS_RELEASE_CONTENT MATCHES "Rocky Linux" OR OS_RELEASE_CONTENT MATCHES "SUSE")
+            # Check for rpmbuild which is required for proper RPM packaging
+            find_program(RPMBUILD_PROGRAM rpmbuild)
+
+            if(RPMBUILD_PROGRAM)
+                message(STATUS "Found rpmbuild: ${RPMBUILD_PROGRAM}, enabling RPM package generation")
                 list(APPEND CPACK_GENERATOR "RPM")
+
+                # RPM package metadata
                 set(CPACK_RPM_PACKAGE_LICENSE "MIT")
                 set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
                 set(CPACK_RPM_PACKAGE_DESCRIPTION ${CPACK_PACKAGE_DESCRIPTION_SUMMARY})
                 set(CPACK_RPM_PACKAGE_URL ${CPACK_PACKAGE_HOMEPAGE_URL})
-                set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
+
+                set(CPACK_RPM_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.rpm")
+
+                # Add dependencies based on whether we're including libraries
+                if(CPACK_INCLUDE_LIBS)
+                    set(CPACK_RPM_PACKAGE_REQUIRES "glibc, openssl")
+                else()
+                    set(CPACK_RPM_PACKAGE_REQUIRES "glibc")
+                endif()
+
+                # RPM-specific packaging options
+                set(CPACK_RPM_COMPONENT_INSTALL ON)
+                set(CPACK_RPM_USE_FILE_PERMISSIONS ON)
+                set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
+                    "/etc"
+                    "/var"
+                    "/opt"
+                )
             else()
-                message(STATUS "rpm not found, RPM package generation disabled")
+                message(STATUS "rpmbuild not found, RPM package generation disabled")
+                message(STATUS "Please install rpm-build package to enable RPM generation")
             endif()
         endif()
     endif()
 
     # Always show which generators will be used
-    message(STATUS "CPack generators: ${CPACK_GENERATOR}")
+    message(STATUS "Enabled CPack generators: ${CPACK_GENERATOR}")
+    message(STATUS "Package file name: ${CPACK_PACKAGE_FILE_NAME}")
+    message(STATUS "Include library files: ${CPACK_INCLUDE_LIBS}")
+    message(STATUS "Installation prefix: ${CPACK_PACKAGING_INSTALL_PREFIX}")
 endif()
 
 # Set the default package installation directory
