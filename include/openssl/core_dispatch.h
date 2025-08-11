@@ -45,11 +45,12 @@ extern "C" {
  * Note: This is considered a "reserved" internal macro. Applications should
  * not use this or assume its existence.
  */
-#define OSSL_CORE_MAKE_FUNC(type, name, args)                                   \
-    typedef type(OSSL_FUNC_##name##_fn) args;                                   \
-    static ossl_unused ossl_inline                                              \
-            OSSL_FUNC_##name##_fn *OSSL_FUNC_##name(const OSSL_DISPATCH *opf) { \
-        return (OSSL_FUNC_##name##_fn *) opf->function;                         \
+#define OSSL_CORE_MAKE_FUNC(type, name, args)            \
+    typedef type(OSSL_FUNC_##name##_fn) args;            \
+    static ossl_unused ossl_inline                       \
+            OSSL_FUNC_##name##_fn *                      \
+            OSSL_FUNC_##name(const OSSL_DISPATCH *opf) { \
+        return (OSSL_FUNC_##name##_fn *) opf->function;  \
     }
 
 /*

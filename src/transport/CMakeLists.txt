@@ -24,8 +24,9 @@ endif()
 
 target_link_libraries(mcp_transport PUBLIC
     mcp_core
-    MCP::OpenSSL
 )
+
+target_link_libraries(mcp_transport PRIVATE MCP::OpenSSL)
 
 # Conditionally install the library and headers
 if(CPACK_INCLUDE_LIBS)

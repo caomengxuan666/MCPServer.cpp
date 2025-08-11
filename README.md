@@ -21,6 +21,7 @@
 - [Getting Started](#getting-started)
 - [Building from Source](#building-from-source)
 - [Configuration](#configuration)
+- [HTTPS and Certificate Generation](#https-and-certificate-generation)
 - [Plugins](#plugins)
 - [API Reference](#api-reference)
 - [CI/CD Pipeline](#cicd-pipeline)
@@ -54,7 +55,7 @@ The server implements the JSON-RPC 2.0 protocol over HTTP transport and supports
 
 ## Architecture
 
-MCPServer.cpp follows a modular architecture with clearly separated components:
+MCPServer.cpp uses a modular architecture with clear boundaries between components:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -76,9 +77,9 @@ MCPServer.cpp follows a modular architecture with clearly separated components:
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      Core Services                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Logger    │  │   Memory    │  │  Object Pooling     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│  ┌─────────────┐                                             │
+│  │   Logger    │                                             │
+│  └─────────────┘                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -87,7 +88,7 @@ MCPServer.cpp follows a modular architecture with clearly separated components:
 1. **Transport Layer**: Handles communication over various protocols (HTTP, stdio, etc.)
 2. **Protocol Layer**: Implements JSON-RPC 2.0 message parsing and formatting
 3. **Business Logic Layer**: Manages tools, plugins, and request processing
-4. **Core Services**: Provides essential services like logging, memory management, and object pooling
+4. **Core Services**: Provides essential services like logging
 
 ## Getting Started
 
@@ -158,7 +159,7 @@ The configuration file contains settings for:
 - Server IP address and port
 - Logging options (level, path, file size, rotation)
 - Plugin directory location
-- Transport protocols (stdio, HTTP)
+- Transport protocols (stdio, HTTP, HTTPS)
 
 An example configuration file (`config.ini.example`) is provided in the project root. During the build process, CMake copies this file to the build directory as `config.ini`. You can modify this file to customize the server behavior.
 
@@ -166,11 +167,17 @@ Key configuration options include:
 
 - `ip`: Server binding IP address (default: 127.0.0.1)
 - `port`: Network port for incoming connections (default: 6666)
+- `http_port`: HTTP transport port (set to 0 to disable HTTP)
+- `https_port`: HTTPS transport port (set to 0 to disable HTTPS)
 - `log_level`: Logging severity (trace, debug, info, warn, error)
 - `log_path`: Filesystem path for log storage
 - `plugin_dir`: Directory containing plugin modules
 - `enable_stdio`: Enable stdio transport (1=enable, 0=disable)
-- `enable_streamable_http`: Enable HTTP transport (1=enable, 0=disable)
+- `enable_http`: Enable HTTP transport (1=enable, 0=disable)
+- `enable_https`: Enable HTTPS transport (1=enable, 0=disable) - HTTPS is disabled by default for security reasons
+- `ssl_cert_file`: SSL certificate file path (required for HTTPS)
+- `ssl_key_file`: SSL private key file path (required for HTTPS)
+- `ssl_dh_params_file`: SSL Diffie-Hellman parameters file path (required for HTTPS)
 
 To customize the configuration:
 
@@ -179,16 +186,38 @@ To customize the configuration:
 3. Rebuild the project - CMake will copy your customized config to the build directory
 
 Example configuration:
-```ini
+``ini
 [server]
 ip=0.0.0.0
 port=6666
+http_port=6666
+https_port=6667
 log_level=info
 log_path=logs/mcp_server.log
 plugin_dir=plugins
 enable_stdio=1
-enable_streamable_http=1
+enable_http=1
+enable_https=0
+ssl_cert_file=certs/server.crt
+ssl_key_file=certs/server.key
+ssl_dh_params_file=certs/dh2048.pem
 ```
+
+## HTTPS and Certificate Generation
+
+MCPServer++ supports secure communication over HTTPS. **By default, HTTPS is disabled for security reasons and must be manually enabled in the configuration file.**
+
+To enable HTTPS:
+1. Set `enable_https=1` in your config.ini
+2. Ensure you have valid SSL certificate files
+3. Configure the required SSL file paths
+
+There are two ways to generate SSL/TLS certificates for development and testing:
+
+1. Using the built-in [generate_cert](file:///D:/codespace/MCPServer%2B%2B/tools/generate_cert.cpp#L265-L411) tool (recommended)
+2. Using OpenSSL command line tools
+
+For detailed instructions on both methods, please refer to the [HTTPS and Certificate Generation](docs/HTTPS_AND_CERTIFICATES.md) documentation.
 
 ## Plugins
 
@@ -289,27 +318,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   <p>Built with ❤️ for the AI community</p>
   <p><a href="https://github.com/caomengxuan666/MCPServer.cpp">GitHub</a> | <a href=https://github.com/caomengxuan666/MCPServer.cpp/issues>Issues</a></p>
 </div>
-```
-
-## SSL/TLS Support (HTTPS)
-
-MCPServer++ now supports HTTPS connections for secure communication. To enable HTTPS, you need to:
-
-1. Generate SSL certificate and private key files
-2. Configure the server to use these files
-
-Example using OpenSSL to generate self-signed certificates:
-```bash
-openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 365 -nodes
-```
-
-Then configure the server in the config.ini file:
-```ini
-[server]
-https_enabled = true
-https_port = 6667
-ssl_cert_file = server.crt
-ssl_private_key_file = server.key
-```
-
-The server will then listen on both HTTP (port 6666) and HTTPS (port 6667) endpoints, allowing clients to choose their preferred connection method.

@@ -74,7 +74,7 @@ class SSEClient:
                         self._handle_event(event, is_reconnect)
 
         except Exception as e:
-            print(f"❌ Connection error: {str(e)}")
+            print(f"× Connection error: {str(e)}")
         finally:
             self.running = False
             print("🔌 Connection closed")
@@ -154,7 +154,7 @@ def test_reconnect_flow():
 
     # Output final verification results
     print("\n----------------------------------------")
-    print(f"✅ Reconnection test completed!\n"
+    print(f"√ Reconnection test completed!\n"
           f"Initial last Event-ID: {last_event_id}\n"
           f"Reconnection last Event-ID: {reconnect_client.last_event_id}")
 

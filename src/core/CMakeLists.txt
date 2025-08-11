@@ -4,7 +4,7 @@ file(GLOB CORE_SOURCES
 )
 add_library(mcp_core ${CORE_SOURCES})
 
-target_include_directories(mcp_core PUBLIC 
+target_include_directories(mcp_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/mcp/core>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
@@ -22,7 +22,7 @@ else()
     target_compile_options(mcp_core PRIVATE -Wall -Wextra)
 endif()
 
-target_link_libraries(mcp_core PUBLIC 
+target_link_libraries(mcp_core PUBLIC
     mcp_plugin_sdk
 )
 
@@ -32,7 +32,7 @@ else()
     list(APPEND CORE_LINKED_LIBRARIES mimalloc)
 endif()
 
-#target_link_libraries(mcp_core PRIVATE ${CORE_LINKED_LIBRARIES})
+# target_link_libraries(mcp_core PRIVATE ${CORE_LINKED_LIBRARIES})
 
 # Conditionally install the library and headers
 if(CPACK_INCLUDE_LIBS)

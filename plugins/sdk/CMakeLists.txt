@@ -26,7 +26,7 @@ else()
 endif()
 
 # Link required libraries for the SDK
-target_link_libraries(mcp_plugin_sdk PUBLIC
+target_link_libraries(mcp_plugin_sdk PRIVATE
     mcp_core
 )
 

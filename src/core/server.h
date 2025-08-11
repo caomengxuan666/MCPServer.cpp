@@ -33,7 +33,7 @@ namespace mcp::core {
 
         bool start_http_transport(uint16_t port, const std::string &address);
         bool start_https_transport(uint16_t port, const std::string &address,
-                                   const std::string &cert_file, const std::string &private_key_file);
+                                   const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file);
         bool start_stdio_transport();
         std::shared_ptr<business::ToolRegistry> registry_;
         std::shared_ptr<business::PluginManager> plugin_manager_;
@@ -69,7 +69,7 @@ namespace mcp::core {
             return *this;
         }
         Builder &with_https_port(unsigned short port = 6667);
-        Builder &with_ssl_certificates(const std::string &cert_file, const std::string &private_key_file);
+        Builder &with_ssl_certificates(const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file);
         Builder &enableHttpTransport(bool enable = true) {
             enable_http_transport_ = enable;
             return *this;
@@ -95,6 +95,7 @@ namespace mcp::core {
         unsigned short https_port_ = 6667;
         std::string cert_file_ = "server.crt";
         std::string private_key_file_ = "server.key";
+        std::string dh_params_file_ = "dh2048.pem";
     };
 
 }// namespace mcp::core

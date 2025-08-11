@@ -2,37 +2,49 @@
 #define MCP_CONFIG_HPP
 
 #include "core/logger.h"
+#include "executable_path.h"
 #include "inicpp.hpp"
 #include <filesystem>
 #include <iostream>
 #include <string>
 
+
 namespace mcp {
     namespace config {
+        constexpr const char *CONFIG_FILE = "config.ini";
 
         // Configuration file path constant
-        constexpr const char *CONFIG_FILE = "config.ini";
+        // Use executable directory to construct config file path to ensure
+        // the config file can be accessed correctly regardless of the working directory
+        inline std::string get_config_file_path() {
+            static std::string config_file_path = []() {
+                std::filesystem::path exe_dir(mcp::core::getExecutableDirectory());
+                return (exe_dir / CONFIG_FILE).string();
+            }();
+            return config_file_path;
+        }
 
         /**
          * Server-specific configuration structure
          * Contains all network and service-related settings
          */
         struct ServerConfig {
-            std::string ip;           // Server binding IP address
-            std::string log_level;    // Logging severity level
-            std::string log_path;     // Directory path for log files
-            std::string log_pattern;  // Custom log format pattern
-            std::string plugin_dir;   // Directory containing plugins
-            std::string ssl_cert_file;// SSL certificate file path
-            std::string ssl_key_file; // SSL private key file path
-            size_t max_file_size;     // Maximum size per log file (bytes)
-            size_t max_files;         // Maximum number of log files to retain
-            unsigned short port;      // Legacy server listening port
-            unsigned short http_port; // HTTP transport port (0 to disable)
-            unsigned short https_port;// HTTPS transport port (0 to disable)
-            bool enable_stdio;        // Enable stdio transport protocol
-            bool enable_http;         // Enable HTTP transport protocol
-            bool enable_https;        // Enable HTTPS transport protocol
+            std::string ip;                // Server binding IP address
+            std::string log_level;         // Logging severity level
+            std::string log_path;          // Directory path for log files
+            std::string log_pattern;       // Custom log format pattern
+            std::string plugin_dir;        // Directory containing plugins
+            std::string ssl_cert_file;     // SSL certificate file path
+            std::string ssl_key_file;      // SSL private key file path
+            std::string ssl_dh_params_file;// Diffie-Hellman parameters file path
+            size_t max_file_size;          // Maximum size per log file (bytes)
+            size_t max_files;              // Maximum number of log files to retain
+            unsigned short port;           // Legacy server listening port
+            unsigned short http_port;      // HTTP transport port (0 to disable)
+            unsigned short https_port;     // HTTPS transport port (0 to disable)
+            bool enable_stdio;             // Enable stdio transport protocol
+            bool enable_http;              // Enable HTTP transport protocol
+            bool enable_https;             // Enable HTTPS transport protocol
 
             /**
              * Loads server configuration from INI file
@@ -54,6 +66,7 @@ namespace mcp {
                     config.plugin_dir = server_section["plugin_dir"].String().empty() ? "plugins" : server_section["plugin_dir"].String();
                     config.ssl_cert_file = server_section["ssl_cert_file"].String().empty() ? "certs/server.crt" : server_section["ssl_cert_file"].String();
                     config.ssl_key_file = server_section["ssl_key_file"].String().empty() ? "certs/server.key" : server_section["ssl_key_file"].String();
+                    config.ssl_dh_params_file = server_section["ssl_dh_params_file"].String().empty() ? "certs/dhparams.pem" : server_section["dh_params_file"].String();
 
                     // Numeric values with explicit conversion
                     config.max_file_size = server_section["max_file_size"].String().empty() ? 10485760 : static_cast<size_t>(server_section["max_file_size"]);
@@ -90,8 +103,8 @@ namespace mcp {
              */
             static GlobalConfig load() {
                 try {
-                    inicpp::IniManager ini(CONFIG_FILE);
-                    std::cout << "Loaded configuration file: " << CONFIG_FILE << std::endl;
+                    inicpp::IniManager ini(get_config_file_path());
+                    std::cout << "Loaded configuration file: " << get_config_file_path() << std::endl;
 
                     GlobalConfig config;
                     config.title = ini[""]["title"].String().empty() ? "MCP Server Configuration" : ini[""]["title"].String();
@@ -111,15 +124,16 @@ namespace mcp {
          */
         inline void initialize_default_config() {
             try {
+                std::string config_file = get_config_file_path();
                 // Check if file exists and has content using filesystem
                 bool file_valid = false;
-                if (std::filesystem::exists(CONFIG_FILE)) {
-                    if (std::filesystem::file_size(CONFIG_FILE) > 0) {
+                if (std::filesystem::exists(config_file)) {
+                    if (std::filesystem::file_size(config_file) > 0) {
                         file_valid = true;
 
                     } else {
-                        MCP_WARN("Configuration file is empty - recreating: {}", CONFIG_FILE);
-                        std::cout << "Configuration file is empty - recreating: " << CONFIG_FILE << std::endl;
+                        MCP_WARN("Configuration file is empty - recreating: {}", config_file);
+                        std::cout << "Configuration file is empty - recreating: " << config_file << std::endl;
                     }
                 }
 
@@ -128,8 +142,8 @@ namespace mcp {
                 }
 
                 // Create new configuration file with defaults
-                inicpp::IniManager ini(CONFIG_FILE);
-                std::cout << "Creating default configuration file: " << CONFIG_FILE << std::endl;
+                inicpp::IniManager ini(config_file);
+                std::cout << "Creating default configuration file: " << config_file << std::endl;
                 // Server section configuration
                 ini.set("server", "ip", "0.0.0.0");
                 ini.set("server", "port", 6666);
@@ -145,6 +159,7 @@ namespace mcp {
                 ini.set("server", "enable_https", 0);
                 ini.set("server", "ssl_cert_file", "certs/server.crt");
                 ini.set("server", "ssl_key_file", "certs/server.key");
+                ini.set("server", "ssl_dh_params_file", "certs/dh2048.pem");
 
                 // Add comments for server section
                 ini.setComment("server", "ip", "IP address the server binds to");
@@ -161,6 +176,7 @@ namespace mcp {
                 ini.setComment("server", "enable_https", "Enable HTTPS transport (1=enable, 0=disable)");
                 ini.setComment("server", "ssl_cert_file", "SSL certificate file path (required for HTTPS)");
                 ini.setComment("server", "ssl_key_file", "SSL private key file path (required for HTTPS)");
+                ini.setComment("server", "ssl_dh_params_file", "SSL Diffie-Hellman parameters file path (required for HTTPS)");
 
                 // Root section configuration
                 ini.set("title", "MCP Server Configuration");
@@ -192,6 +208,7 @@ namespace mcp {
             MCP_DEBUG("Plugin Directory: {}", config.server.plugin_dir);
             MCP_DEBUG("SSL Certificate File: {}", config.server.ssl_cert_file);
             MCP_DEBUG("SSL Key File: {}", config.server.ssl_key_file);
+            MCP_DEBUG("SSL DH Parameters File: {}", config.server.ssl_dh_params_file);
             MCP_DEBUG("Max Log File Size: {}", config.server.max_file_size);
             MCP_DEBUG("Max Log Files: {}", config.server.max_files);
             MCP_DEBUG("Stdio Transport Enabled: {}", config.server.enable_stdio ? "Yes" : "No");
@@ -206,8 +223,9 @@ namespace mcp {
          */
         inline void list_config_sections() {
             try {
-                inicpp::IniManager ini(CONFIG_FILE);
-                MCP_DEBUG("Listing all configuration sections from: {}", CONFIG_FILE);
+                std::string config_file = get_config_file_path();
+                inicpp::IniManager ini(config_file);
+                MCP_DEBUG("Listing all configuration sections from: {}", config_file);
 
                 for (const auto &section: ini.sectionsList()) {
                     MCP_DEBUG("\n[{}]", section);

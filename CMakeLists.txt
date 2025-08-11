@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(MCPServer.cpp LANGUAGES CXX VERSION 1.0.2.5)
+project(MCPServer.cpp LANGUAGES CXX VERSION 1.0.3.0)
 
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_VISIBILITY_PRESET default)
@@ -13,9 +13,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include(cmake/PluginCommon.cmake)
-include(cmake/CopyIniConfig.cmake)
+include(cmake/CopyConfig.cmake)
 include(cmake/FindMCPOpenSSL.cmake)
 copy_ini_config()
+copy_certs()
 
 set(PROJECT_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR} CACHE STRING "Major version number")
 set(PROJECT_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR} CACHE STRING "Minor version number")
@@ -62,9 +63,7 @@ target_include_directories(mcp-server++ PRIVATE
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/asio/asio/include)
 
 if(WIN32)
-    list(APPEND LINKED_LIBRARIES mimalloc-static)
-else()
-    list(APPEND LINKED_LIBRARIES mimalloc)
+    add_compile_definitions(_WIN32_WINDOWS)
 endif()
 
 # link mimalloc
@@ -99,7 +98,6 @@ if(UNIX)
         mcp_protocol
         -Wl,--end-group
         mcp_plugin_sdk
-        MCP::OpenSSL
     )
 else()
     target_link_libraries(mcp-server++ PRIVATE
@@ -108,7 +106,6 @@ else()
         mcp_transport
         mcp_protocol
         mcp_plugin_sdk
-        MCP::OpenSSL
     )
 endif()
 
@@ -129,6 +126,14 @@ install(FILES
     README_zh.md
     LICENSE
     DESTINATION share/doc/mcp-server++
+)
+
+# Install docs directory
+install(DIRECTORY docs/
+    DESTINATION share/doc/mcp-server++
+    FILES_MATCHING 
+    PATTERN "*.md"
+    PATTERN "*.png"
 )
 
 # Conditionally install headers for development (only when including libs)

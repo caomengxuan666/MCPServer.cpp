@@ -75,7 +75,7 @@ class MCPHTTPTester:
         assert "id" in response and response["id"] == 1, "Response ID mismatch"
         assert "result" in response, "Response missing result field"
         assert "capabilities" in response["result"], "Response missing capabilities field"
-        print("✅ Initialization test passed")
+        print("√ Initialization test passed")
         return response
     
     async def test_initialized_notification(self):
@@ -95,13 +95,13 @@ class MCPHTTPTester:
                 ) as response:
                     assert response.status == 202, f"Notification status error: {response.status}"
         except asyncio.TimeoutError:
-            print("❌ Notification request timeout")
+            print("× Notification request timeout")
             raise
         except Exception as e:
-            print(f"❌ Notification sending error: {str(e)}")
+            print(f"× Notification sending error: {str(e)}")
             raise
         
-        print("✅ initialized notification test completed")
+        print("√ initialized notification test completed")
         
     async def test_list_tools(self):
         """Test tool list request"""
@@ -121,7 +121,7 @@ class MCPHTTPTester:
         assert "id" in response and response["id"] == 2
         assert "result" in response
         assert "tools" in response["result"], "Response missing tool list"
-        print(f"✅ Tool list test passed (found {len(response['result']['tools'])} tools)")
+        print(f"√ Tool list test passed (found {len(response['result']['tools'])} tools)")
         # Return tool list for subsequent tests
         return response["result"]["tools"]
     
@@ -145,7 +145,7 @@ class MCPHTTPTester:
         assert response.get("jsonrpc") == "2.0"
         assert "id" in response and response["id"] == request_id
         assert "error" not in response, f"Tool invocation error: {response.get('error', {}).get('message')}"
-        print(f"✅ {tool_name} tool test passed")
+        print(f"√ {tool_name} tool test passed")
         return response
     
     async def close(self):
@@ -194,14 +194,14 @@ class MCPHTTPTester:
                     await self.test_tool_invoke(tool_name, params, req_id)
                     await asyncio.sleep(0.5)
                 else:
-                    print(f"⚠️ Skipping unregistered tool: {tool_name}")
+                    print(f"  Skipping unregistered tool: {tool_name}")
             
             print("\n🎉 All available tool tests passed!")
             
         except AssertionError as e:
-            print(f"\n❌ Test assertion failed: {e}")
+            print(f"\n× Test assertion failed: {e}")
         except Exception as e:
-            print(f"\n❌ Test failed: {e}")
+            print(f"\n× Test failed: {e}")
         finally:
             await self.close()
 

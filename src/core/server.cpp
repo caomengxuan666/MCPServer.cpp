@@ -53,9 +53,10 @@ namespace mcp::core {
         return *this;
     }
 
-    MCPserver::Builder &MCPserver::Builder::with_ssl_certificates(const std::string &cert_file, const std::string &private_key_file) {
+    MCPserver::Builder &MCPserver::Builder::with_ssl_certificates(const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file) {
         cert_file_ = cert_file;
         private_key_file_ = private_key_file;
+        dh_params_file_ = dh_params_file;
         return *this;
     }
 
@@ -168,7 +169,7 @@ namespace mcp::core {
 
         if (enable_https_transport_) {
             // Automatically start HTTPS transport as part of the build process
-            if (!server_->start_https_transport(https_port_, address_, cert_file_, private_key_file_)) {
+            if (!server_->start_https_transport(https_port_, address_, cert_file_, private_key_file_, dh_params_file_)) {
                 MCP_ERROR("Failed to start HTTPS transport during server build");
                 MCP_ERROR("HTTPS transport will be disabled");
                 // Disable HTTPS transport since it failed to start
@@ -240,16 +241,16 @@ namespace mcp::core {
     }
 
     bool MCPserver::start_https_transport(uint16_t port, const std::string &address,
-                                          const std::string &cert_file, const std::string &private_key_file) {
+                                          const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file) {
         try {
-            https_transport_ = std::make_unique<mcp::transport::HttpsTransport>(address, port, cert_file, private_key_file);
+            https_transport_ = std::make_unique<mcp::transport::HttpsTransport>(address, port, cert_file, private_key_file, dh_params_file);
 
             auto success = https_transport_->start([this](const std::string &msg,
                                                           std::shared_ptr<mcp::transport::Session> session,
                                                           const std::string &session_id) {
                 MCP_DEBUG("HTTPS message received: \n{}", msg);
                 // handle by dispatcher
-                // 将Session转换为SslSession以确保正确处理HTTPS会话
+                // convert to SSL session
                 auto ssl_session = std::dynamic_pointer_cast<mcp::transport::SslSession>(session);
                 request_handler_->handle_request(msg, ssl_session ? ssl_session : session, session_id);
             });
@@ -261,6 +262,7 @@ namespace mcp::core {
                 MCP_ERROR("Please make sure the SSL certificate and private key files exist:");
                 MCP_ERROR("  Certificate file: {}", cert_file);
                 MCP_ERROR("  Private key file: {}", private_key_file);
+                MCP_ERROR("  Diffie-Hellman parameters file: {}", dh_params_file);
             }
 
             return success;
@@ -269,6 +271,7 @@ namespace mcp::core {
             MCP_ERROR("Please make sure the SSL certificate and private key files exist:");
             MCP_ERROR("  Certificate file: {}", cert_file);
             MCP_ERROR("  Private key file: {}", private_key_file);
+            MCP_ERROR("  Diffie-Hellman parameters file: {}", dh_params_file);
             return false;
         }
     }

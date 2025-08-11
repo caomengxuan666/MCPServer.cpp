@@ -37,7 +37,7 @@ int main() {
         mcp::core::MCPLogger::instance()->set_pattern(logPattern);
 
         // Log that the application has started successfully.
-        MCP_INFO("MCPServer.cpp started with configuration from '{}'", mcp::config::CONFIG_FILE);
+        MCP_INFO("MCPServer.cpp started with configuration from '{}'", mcp::config::get_config_file_path());
 
         // Step 3: Output all configuration values to the debug log for inspection.
         mcp::config::print_config(config);
@@ -54,8 +54,8 @@ int main() {
                               .enableHttpsTransport(config.server.enable_https)// Enable HTTPS transport if configured
                               .with_https_port(config.server.https_port)       // Set HTTPS port
                               .with_ssl_certificates(config.server.ssl_cert_file,
-                                                     config.server.ssl_key_file)// Set SSL certificate files
-                              .build();                                         // Construct the server instance
+                                                     config.server.ssl_key_file, config.server.ssl_dh_params_file)// Set SSL certificate files
+                              .build();                                                                           // Construct the server instance
 
         // Notify that the server is ready to accept connections.
         MCP_INFO("MCPServer.cpp is ready.");
