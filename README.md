@@ -186,7 +186,7 @@ To customize the configuration:
 3. Rebuild the project - CMake will copy your customized config to the build directory
 
 Example configuration:
-``ini
+```ini
 [server]
 ip=0.0.0.0
 port=6666
