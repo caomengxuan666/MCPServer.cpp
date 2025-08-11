@@ -6,8 +6,12 @@ title=MCP Server Configuration
 [server]
 ;IP address the server binds to
 ip=0.0.0.0
-;Network port for incoming connections
+;Legacy network port for incoming connections
 port=6666
+;HTTP transport port (set to 0 to disable HTTP)
+http_port=6666
+;HTTPS transport port (set to 0 to disable HTTPS)
+https_port=6667
 ;Logging severity (trace, debug, info, warn, error)
 log_level=trace
 ;Filesystem path for log storage
@@ -21,4 +25,12 @@ plugin_dir=plugins
 ;Enable stdio transport (1=enable, 0=disable)
 enable_stdio=1
 ;Enable HTTP transport (1=enable, 0=disable)
-enable_streamable_http=1
+enable_http=1
+;Enable HTTPS transport (1=enable, 0=disable)
+enable_https=0
+;SSL certificate file path (required for HTTPS)
+ssl_cert_file=certs/server.crt
+;SSL private key file path (required for HTTPS)
+ssl_key_file=certs/server.key
+;SSL Diffie-Hellman parameters file path (required for HTTPS)
+ssl_dh_params_file=certs/dh2048.pem
