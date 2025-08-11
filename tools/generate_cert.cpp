@@ -269,7 +269,9 @@ bool generate_dh_params(const std::string &path, int bits = 2048) {
     return ok;
 }
 
+
 // Windows: Install CA to local machine trust store
+#ifdef _WIN32
 bool install_ca_windows(const std::string &ca_path) {
     // Fix CertOpenSystemStoreA call, use 0 instead of nullptr
     HANDLE hStore = CertOpenSystemStoreA(0, "ROOT");
@@ -321,6 +323,7 @@ bool install_ca_windows(const std::string &ca_path) {
     CertCloseStore(hStore, 0);
     return ok;
 }
+#endif
 
 // Linux: Install CA to system trust store
 bool install_ca_linux(const std::string &ca_path) {
