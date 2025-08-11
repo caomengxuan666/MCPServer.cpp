@@ -25,7 +25,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake rpm
+          sudo apt-get install -y cmake rpm dpkg
         timeout-minutes: 5
 
       - name: Install NSIS (Windows)
@@ -83,7 +83,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake rpm
+          sudo apt-get install -y cmake rpm dpkg
         timeout-minutes: 5
 
       - name: Install NSIS (Windows)

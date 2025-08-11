@@ -132,11 +132,20 @@ elseif(UNIX)
         if(OS_RELEASE_CONTENT MATCHES "ID=([a-z]*)")
             set(LINUX_ID ${CMAKE_MATCH_1})
         endif()
+        
+        # Also check for Ubuntu specifically (as it may not always match the ID pattern correctly)
+        if(OS_RELEASE_CONTENT MATCHES "ID_LIKE=([a-z]*)")
+            set(LINUX_ID_LIKE ${CMAKE_MATCH_1})
+        endif()
 
-        if(LINUX_ID STREQUAL "ubuntu" OR LINUX_ID STREQUAL "debian")
+        # Check for Ubuntu/Debian
+        if(LINUX_ID STREQUAL "ubuntu" OR LINUX_ID STREQUAL "debian" OR 
+           LINUX_ID_LIKE STREQUAL "ubuntu" OR LINUX_ID_LIKE STREQUAL "debian" OR
+           OS_RELEASE_CONTENT MATCHES "Ubuntu" OR OS_RELEASE_CONTENT MATCHES "Debian")
             find_program(DPKG_PROGRAM dpkg)
 
             if(DPKG_PROGRAM)
+                message(STATUS "Found dpkg: ${DPKG_PROGRAM}, enabling DEB package generation")
                 list(APPEND CPACK_GENERATOR "DEB")
                 set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_CONTACT})
                 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CPACK_PACKAGE_DESCRIPTION_SUMMARY})
@@ -145,17 +154,28 @@ elseif(UNIX)
                 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${CPACK_PACKAGE_HOMEPAGE_URL})
                 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6")
                 set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
+            else()
+                message(STATUS "dpkg not found, DEB package generation disabled")
             endif()
-        elseif(LINUX_ID STREQUAL "centos" OR LINUX_ID STREQUAL "rhel" OR LINUX_ID STREQUAL "fedora")
+        endif()
+        
+        # Check for CentOS/RHEL/Fedora
+        if(LINUX_ID STREQUAL "centos" OR LINUX_ID STREQUAL "rhel" OR LINUX_ID STREQUAL "fedora" OR
+           LINUX_ID_LIKE STREQUAL "rhel" OR LINUX_ID_LIKE STREQUAL "fedora" OR
+           OS_RELEASE_CONTENT MATCHES "CentOS" OR OS_RELEASE_CONTENT MATCHES "Red Hat" OR 
+           OS_RELEASE_CONTENT MATCHES "Fedora")
             find_program(RPM_PROGRAM rpm)
 
             if(RPM_PROGRAM)
+                message(STATUS "Found rpm: ${RPM_PROGRAM}, enabling RPM package generation")
                 list(APPEND CPACK_GENERATOR "RPM")
                 set(CPACK_RPM_PACKAGE_LICENSE "MIT")
                 set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
                 set(CPACK_RPM_PACKAGE_DESCRIPTION ${CPACK_PACKAGE_DESCRIPTION_SUMMARY})
                 set(CPACK_RPM_PACKAGE_URL ${CPACK_PACKAGE_HOMEPAGE_URL})
                 set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
+            else()
+                message(STATUS "rpm not found, RPM package generation disabled")
             endif()
         endif()
     endif()
