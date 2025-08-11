@@ -442,7 +442,7 @@ namespace mcp::transport {
                 co_return;
             }
         } catch (const std::exception &e) {
-            MCP_ERROR("Error handling request: {}", EnsureUTF8(e.what()));
+            MCP_ERROR("Error handling request: {}", e.what());
             error_occurred = true;
             session->close();
         }
