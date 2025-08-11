@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(MCPServer.cpp LANGUAGES CXX VERSION 1.0.3.5)
+project(MCPServer.cpp LANGUAGES CXX VERSION 1.0.3.6)
 
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_VISIBILITY_PRESET default)

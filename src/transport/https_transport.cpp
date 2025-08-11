@@ -6,6 +6,7 @@
 #include <asio/ssl/context.hpp>
 #include <filesystem>
 #include <fstream>
+#include <utils/utf8_encode.h>
 
 using asio::use_awaitable;
 
