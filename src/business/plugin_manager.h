@@ -5,12 +5,16 @@
 #endif
 
 #include "mcp_plugin.h"
+#include <atomic>
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -45,6 +49,10 @@ namespace mcp::business {
         bool load_plugin(const std::string &path);
         void load_plugins_from_directory(const std::string &directory);
 
+        // Real-time plugin directory monitoring functionality
+        bool start_directory_monitoring(const std::string &directory);
+        void stop_directory_monitoring();
+
         // get tools from a specific plugin
         std::vector<ToolInfo> get_tools_from_plugin(const std::string &plugin_path) const;
 
@@ -65,16 +73,24 @@ namespace mcp::business {
         };
 
         StreamFunctions get_stream_functions(StreamGenerator generator) const;
-
+        void unload_plugin(const std::string &plugin_name);
         void set_current_plugin(Plugin *plugin) { current_plugin_ = plugin; }
 
 
     private:
+        bool is_plugin_file(const std::filesystem::path &path) const;
         std::unordered_map<std::string, std::unique_ptr<Plugin>> plugins_;// name -> Plugin mapping
         std::vector<std::string> load_order_;                             // to keep track of load order
         Plugin *current_plugin_ = nullptr;
         mutable std::mutex generator_mutex_;// thread safety
         std::unordered_map<StreamGenerator, Plugin *> generator_to_plugin_;
+
+        // Real-time monitoring related member variables
+        std::atomic<bool> monitoring_active_{false};
+        std::thread monitoring_thread_;
+        std::string monitored_directory_;
+        std::unordered_map<std::string, std::filesystem::file_time_type> plugin_file_times_;
+        std::mutex monitoring_mutex_;
     };
 
 }// namespace mcp::business

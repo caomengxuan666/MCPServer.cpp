@@ -16,20 +16,14 @@ static std::string read_file(const std::string &path) {
         std::ifstream f(path);
         if (!f.is_open()) {
             // Return custom error code and message, consistent with safe_system_plugin
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "File not found or cannot open"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, "File not found or cannot open");
         }
         std::stringstream buffer;
         buffer << f.rdbuf();
-        return nlohmann::json{{"content", buffer.str()}}.dump();
+        return mcp::protocol::generate_result(nlohmann::json{{"content", buffer.str()}});
     } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Failed to read file: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, "Failed to read file: " + std::string(e.what()));
     }
 }
 
@@ -38,27 +32,21 @@ static std::string write_file(const std::string &path, const std::string &conten
         std::ofstream f(path);
         if (!f.is_open()) {
             // Return custom error code and message, consistent with safe_system_plugin
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Cannot open file for writing"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, "Cannot open file for writing");
         }
         f << content;
         f.close();
-        return R"({"result": "success"})";
+        return mcp::protocol::generate_result(nlohmann::json{{"result", "success"}});
     } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Failed to write file: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, "Failed to write file: " + std::string(e.what()));
     }
 }
 
 static std::string list_files(const std::string &path) {
     // This is a simplified implementation that just returns the path
     // A real implementation would actually list files in the directory
-    return nlohmann::json{{"path", path}}.dump();
+    return mcp::protocol::generate_result(nlohmann::json{{"path", path}});
 }
 
 extern "C" MCP_API ToolInfo *get_tools(int *count) {

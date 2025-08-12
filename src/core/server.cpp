@@ -203,6 +203,13 @@ namespace mcp::core {
         } else {
             MCP_WARN("No transports enabled. Server will not be able to receive messages.");
         }
+        for (const auto &directory: server_->plugin_directories_) {
+            if (server_->plugin_manager_->start_directory_monitoring(directory)) {
+                MCP_INFO("Started monitoring plugin directory: {}", directory);
+            } else {
+                MCP_WARN("Failed to start monitoring for plugin directory: {}", directory);
+            }
+        }
 
         return std::move(server_);
     }

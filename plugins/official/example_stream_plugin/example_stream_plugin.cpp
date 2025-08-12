@@ -67,13 +67,11 @@ static int number_stream_next(StreamGenerator generator, const char **result_jso
         batch.push_back(gen->current_num++);
     }
 
-
-    nlohmann::json response = {
-            {"jsonrpc", "2.0"},
-            {"result", {{"batch", batch}, {"remaining", 1024 - gen->current_num + 1}}}};
+    nlohmann::json result = {{"batch", batch}, {"remaining", 1024 - gen->current_num + 1}};
+    std::string response = mcp::protocol::generate_result(result);
 
     static thread_local std::string buffer;
-    buffer = response.dump();
+    buffer = response;
     *result_json = buffer.c_str();
 
     gen->last_send_time = now;

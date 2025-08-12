@@ -1,11 +1,13 @@
 // src/business/plugin_manager.cpp
 #include "plugin_manager.h"
 #include "core/logger.h"
+#include "protocol/json_rpc.h"
 #include <filesystem>
 
 namespace mcp::business {
 
     PluginManager::~PluginManager() {
+        stop_directory_monitoring();
         for (auto &[name, plugin]: plugins_) {
             if (plugin->handle) {
                 CLOSE_LIB(plugin->handle);
@@ -171,7 +173,7 @@ namespace mcp::business {
 
                         if (!result_json) {
                             return nlohmann::json{
-                                    {"error", {{"code", -32603},// INTERNAL_ERROR
+                                    {"error", {{"code", -mcp::protocol::error_code::INTERNAL_ERROR},// INTERNAL_ERROR
                                                {"message", "Tool returned null result"}}}};
                         }
 
@@ -183,7 +185,7 @@ namespace mcp::business {
                         if (result.contains("error")) {
                             // Use the error code and message returned by the plugin
                             return nlohmann::json{
-                                    {"error", {{"code", result["error"].value("code", -32603)}, {"message", result["error"].value("message", "Unknown error")}}}};
+                                    {"error", {{"code", result["error"].value("code", -mcp::protocol::error_code::INTERNAL_ERROR)}, {"message", result["error"].value("message", "Unknown error")}}}};
                         }
 
                         // Return result on success
@@ -191,14 +193,14 @@ namespace mcp::business {
                     } catch (const std::exception &e) {
                         MCP_ERROR("Error calling tool '{}': {}", name, e.what());
                         return nlohmann::json{
-                                {"error", {{"code", -32603},// INTERNAL_ERROR
+                                {"error", {{"code", -mcp::protocol::error_code::INTERNAL_ERROR},// INTERNAL_ERROR
                                            {"message", e.what()}}}};
                     }
                 }
             }
         }
         return nlohmann::json{
-                {"error", {{"code", -32601},// METHOD_NOT_FOUND
+                {"error", {{"code", mcp::protocol::error_code::METHOD_NOT_FOUND},// METHOD_NOT_FOUND
                            {"message", "Tool not found: " + name}}}};
     }
 
@@ -256,7 +258,7 @@ namespace mcp::business {
 
                         if (!raw_result) {
                             if (out_error) {
-                                out_error->code = -32603;// INTERNAL_ERROR
+                                out_error->code = -mcp::protocol::error_code::INTERNAL_ERROR;// INTERNAL_ERROR
                                 out_error->message = "Plugin returned null for streaming tool";
                             }
                             return nullptr;
@@ -270,7 +272,7 @@ namespace mcp::business {
                         return generator;
                     } catch (const std::exception &e) {
                         if (out_error) {
-                            out_error->code = -32603;// INTERNAL_ERROR
+                            out_error->code = -mcp::protocol::error_code::INTERNAL_ERROR;// INTERNAL_ERROR
                             out_error->message = e.what();
                         }
                         return nullptr;
@@ -280,9 +282,168 @@ namespace mcp::business {
         }
 
         if (out_error) {
-            out_error->code = -32601;// METHOD_NOT_FOUND
+            out_error->code = mcp::protocol::error_code::METHOD_NOT_FOUND;// METHOD_NOT_FOUND
             out_error->message = "Streaming tool not found or not marked as streaming";
         }
         return nullptr;
     }
+
+    bool PluginManager::start_directory_monitoring(const std::string &directory) {
+        if (monitoring_active_) {
+            MCP_WARN("Directory monitoring is already active");
+            return false;
+        }
+
+        std::filesystem::path dir_path(directory);
+        if (!std::filesystem::is_directory(dir_path)) {
+            MCP_ERROR("Invalid directory for monitoring: {}", directory);
+            return false;
+        }
+
+        // save the directory path and the file times
+        monitored_directory_ = directory;
+        plugin_file_times_.clear();
+
+        try {
+            for (const auto &entry: std::filesystem::directory_iterator(dir_path)) {
+                if (entry.is_regular_file() && is_plugin_file(entry.path())) {
+                    std::string path_str = entry.path().string();
+                    plugin_file_times_[path_str] = std::filesystem::last_write_time(entry.path());
+                }
+            }
+        } catch (const std::filesystem::filesystem_error &e) {
+            MCP_ERROR("Failed to initialize monitoring: {}", e.what());
+            return false;
+        }
+
+        monitoring_active_ = true;
+        monitoring_thread_ = std::thread([this]() {
+            while (monitoring_active_) {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::lock_guard<std::mutex> lock(monitoring_mutex_);
+
+                try {
+                    // Get all files in the directory
+                    std::unordered_map<std::string, std::filesystem::file_time_type> current_files;
+                    for (const auto &entry: std::filesystem::directory_iterator(monitored_directory_)) {
+                        if (entry.is_regular_file() && is_plugin_file(entry.path())) {
+                            std::string path_str = entry.path().string();
+                            current_files[path_str] = std::filesystem::last_write_time(entry.path());
+                        }
+                    }
+
+                    // handle the case where a plugin was deleted
+                    for (auto it = plugin_file_times_.begin(); it != plugin_file_times_.end();) {
+                        const std::string &path = it->first;
+                        if (!current_files.count(path)) {
+                            std::string plugin_name = std::filesystem::path(path).filename().string();
+                            MCP_INFO("Detected removed plugin: {}", plugin_name);
+                            unload_plugin(plugin_name);
+                            it = plugin_file_times_.erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+
+                    // handle update plugins and remove plugins
+                    for (const auto &[path, current_time]: current_files) {
+                        auto it = plugin_file_times_.find(path);
+                        if (it == plugin_file_times_.end()) {
+                            // new plugin
+                            MCP_INFO("Detected new plugin: {}", path);
+                            if (load_plugin(path)) {
+                                plugin_file_times_[path] = current_time;
+                                // print the plugin's tools
+                                auto new_tools = get_tools_from_plugin(path);
+                                MCP_INFO("New tools added from plugin (total: {}):", new_tools.size());
+                                for (const auto &tool: new_tools) {
+                                    if (tool.name) {
+                                        MCP_INFO("  - '{}'", tool.name);
+                                    }
+                                }
+                            }
+                        } else if (current_time != it->second) {
+                            // update plugin
+                            MCP_INFO("Detected modified plugin: {}", path);
+                            std::string plugin_name = std::filesystem::path(path).filename().string();
+                            unload_plugin(plugin_name);
+                            if (load_plugin(path)) {
+                                it->second = current_time;
+                                auto updated_tools = get_tools_from_plugin(path);
+                                MCP_INFO("Updated tools in plugin (total: {}):", updated_tools.size());
+                                for (const auto &tool: updated_tools) {
+                                    if (tool.name) {
+                                        MCP_INFO("  - '{}'", tool.name);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (const std::filesystem::filesystem_error &e) {
+                    MCP_ERROR("Filesystem error during monitoring: {}", e.what());
+                } catch (const std::exception &e) {
+                    MCP_ERROR("Unexpected error during monitoring: {}", e.what());
+                }
+            }
+        });
+
+        MCP_INFO("Started directory monitoring for: {}", directory);
+        return true;
+    }
+    void PluginManager::stop_directory_monitoring() {
+        if (monitoring_active_) {
+            monitoring_active_ = false;
+            if (monitoring_thread_.joinable()) {
+                monitoring_thread_.join();
+            }
+            MCP_INFO("Stopped directory monitoring for: {}", monitored_directory_);
+            monitored_directory_.clear();
+            plugin_file_times_.clear();
+        }
+    }
+
+    void PluginManager::unload_plugin(const std::string &plugin_name) {
+        auto it = plugins_.find(plugin_name);
+        if (it == plugins_.end()) {
+            MCP_WARN("Plugin not found for unloading: {}", plugin_name);
+            return;
+        }
+
+        lib_handle handle = it->second->handle;
+
+        if (handle) {
+            CLOSE_LIB(handle);
+            MCP_DEBUG("Closed library handle for plugin: {}", plugin_name);
+        }
+
+        plugins_.erase(it);
+        MCP_DEBUG("Removed plugin from registry: {}", plugin_name);
+
+        auto load_it = std::find(load_order_.begin(), load_order_.end(), plugin_name);
+        if (load_it != load_order_.end()) {
+            load_order_.erase(load_it);
+        }
+
+        std::lock_guard<std::mutex> lock(generator_mutex_);
+        for (auto gen_it = generator_to_plugin_.begin(); gen_it != generator_to_plugin_.end();) {
+            if (gen_it->second->handle == handle) {
+                gen_it = generator_to_plugin_.erase(gen_it);
+            } else {
+                ++gen_it;
+            }
+        }
+
+        MCP_INFO("Successfully unloaded plugin: {}", plugin_name);
+    }
+
+    bool PluginManager::is_plugin_file(const std::filesystem::path &path) const {
+#ifdef _WIN32
+        return path.extension() == ".dll";
+#elif __APPLE__
+        return path.extension() == ".dylib";
+#else
+        return path.extension() == ".so";
+#endif
+    }
+
 }// namespace mcp::business

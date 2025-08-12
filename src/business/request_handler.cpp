@@ -1,4 +1,3 @@
-// src/business/request_handler.cpp
 #include "request_handler.h"
 #include "core/logger.h"
 #include "protocol/json_rpc.h"
@@ -15,7 +14,7 @@ namespace mcp::business {
     using namespace routers;
     RequestHandler::RequestHandler(std::shared_ptr<ToolRegistry> registry, ResponseCallback send_response)
         : registry_(std::move(registry)), send_response_(std::move(send_response)) {
-        // register route handler
+        // Register route handlers
         router_.register_handler("initialize", handle_initialize);
         router_.register_handler("tools/list", handle_tools_list);
         router_.register_handler("tools/call", handle_tools_call);
@@ -27,7 +26,7 @@ namespace mcp::business {
                                                                       const std::string &session_id) {
             MCP_DEBUG("Received notifications/initialized for session: {}", session_id);
 
-            return protocol::Response{};// return null response for those notofications
+            return protocol::Response{};// Return empty response for notifications
         });
         router_.register_handler("ping", [](
                                                  const protocol::Request &req,
@@ -37,8 +36,8 @@ namespace mcp::business {
             MCP_DEBUG("Received ping request (session: {})", session_id);
 
             protocol::Response resp;
-            resp.id = req.id;
-            resp.result = nlohmann::json::object();
+            resp.id = req.id.value_or(nlohmann::json(nullptr));
+            resp.result = nlohmann::json::object();// Empty object for ping response
 
             return resp;
         });
@@ -49,38 +48,49 @@ namespace mcp::business {
             std::shared_ptr<transport::Session> session,
             const std::string &session_id) {
         MCP_DEBUG("Raw message: {}", msg);
-        auto req = mcp::protocol::parse_request(msg);
-        if (!req) {
-            // invalid request
-            std::string err = protocol::make_error(
-                    protocol::error_code::INVALID_REQUEST,
-                    "Invalid JSON-RPC request");
+        // Parse JSON-RPC request
+        auto [parsed_req, parse_error] = mcp::protocol::parse_request(msg);
 
-            // for stdio write to stdout
-            // if no session,it is stdio
+        // Check if request parsing failed
+        if (!parsed_req.has_value()) {
+            // Generate appropriate error message
+            std::string err;
+            if (parse_error.has_value()) {
+                err = protocol::make_error(parse_error.value());
+            } else {
+                err = protocol::make_error(
+                        protocol::error_code::INVALID_REQUEST,
+                        "Invalid JSON-RPC request format");
+            }
+
+            // Handle stdio transport (no session)
             if (!session) {
                 std::cout << err << std::endl;
                 return;
             }
 
+            // Send error response through callback
             send_response_(err, session, session_id);
             return;
         }
 
-        //handle routers
-        auto response = router_.route_request(*req, registry_, session, session_id);
+        // Get valid request object from parsed result
+        const protocol::Request &request = parsed_req.value();
 
-        // Only send unStreaming responses
-        if (response.id != nullptr) {
+        // Route request to appropriate handler
+        auto response = router_.route_request(request, registry_, session, session_id);
+
+        // Only send responses for non-notification requests (those with ID)
+        if (!response.id.is_null()) {
             std::string resp_str = protocol::make_response(response);
 
-            // for stdio write to stdout
-            //if no session,it is stdio
+            // Handle stdio transport (no session)
             if (!session) {
                 std::cout << resp_str << std::endl;
                 return;
             }
 
+            // Send normal response through callback
             send_response_(resp_str, session, session_id);
         }
     }

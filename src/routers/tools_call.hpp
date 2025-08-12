@@ -215,7 +215,7 @@ namespace mcp::routers {
                     std::string error_msg = tool_error.message
                                                     ? tool_error.message
                                                     : "Failed to start streaming tool: " + tool_name;
-                    int error_code = tool_error.code ? tool_error.code : -32603;
+                    int error_code = tool_error.code ? tool_error.code : -mcp::protocol::error_code::INTERNAL_ERROR;
 
                     nlohmann::json error_event = {
                             {"code", error_code},

@@ -37,13 +37,11 @@ static std::string get_current_time() {
         ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
 
         // Return raw business data without RPC wrapper
-        return nlohmann::json{{"current_time", ss.str()}}.dump();
+        return mcp::protocol::generate_result(nlohmann::json{{"current_time", ss.str()}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Failed to get current time: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "Failed to get current time: " + std::string(e.what()));
     }
 }
 
@@ -61,13 +59,11 @@ static std::string get_system_info() {
         std::string arch = sizeof(void *) == 8 ? "x86_64" : "x86";
 
         // Return raw business data without RPC wrapper
-        return nlohmann::json{{"os", os}, {"arch", arch}}.dump();
+        return mcp::protocol::generate_result(nlohmann::json{{"os", os}, {"arch", arch}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Failed to get system info: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "Failed to get system info: " + std::string(e.what()));
     }
 }
 
@@ -81,10 +77,8 @@ static std::string list_files(const std::string &path) {
         // Prevent path traversal attacks
         if (path.find("..") != std::string::npos) {
             // Return custom error code and message
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Path traversal is not allowed"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                 "Path traversal is not allowed");
         }
 
         std::array<char, 128> buffer;
@@ -101,10 +95,8 @@ static std::string list_files(const std::string &path) {
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
         if (!pipe) {
             // Return custom error code and message
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Failed to list files: Pipe creation failed"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                 "Failed to list files: Pipe creation failed");
         }
 
         // Read command output
@@ -113,13 +105,11 @@ static std::string list_files(const std::string &path) {
         }
 
         // Return raw business data
-        return nlohmann::json{{"files", result}}.dump();
+        return mcp::protocol::generate_result(nlohmann::json{{"files", result}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Failed to list files: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "Failed to list files: " + std::string(e.what()));
     }
 }
 
@@ -135,10 +125,8 @@ static std::string ping_host(const std::string &host) {
                 return std::isalnum(c) || c == '.' || c == '-';
             })) {
             // Return custom error code and message
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Invalid host name format"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                 "Invalid host name format");
         }
 
         std::array<char, 128> buffer;
@@ -155,10 +143,8 @@ static std::string ping_host(const std::string &host) {
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
         if (!pipe) {
             // Return custom error code and message
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Ping command failed: Pipe creation failed"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                 "Ping command failed: Pipe creation failed");
         }
 
         // Read ping output
@@ -171,13 +157,11 @@ static std::string ping_host(const std::string &host) {
                        result.find("time=") != std::string::npos;
 
         // Return raw business data
-        return nlohmann::json{{"output", result}, {"success", success}}.dump();
+        return mcp::protocol::generate_result(nlohmann::json{{"output", result}, {"success", success}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Ping command failed: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "Ping command failed: " + std::string(e.what()));
     }
 }
 
@@ -190,10 +174,8 @@ static std::string check_connectivity() {
         return ping_host("8.8.8.8");// Use Google DNS as test target
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Failed to check connectivity: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "Failed to check connectivity: " + std::string(e.what()));
     }
 }
 
@@ -222,10 +204,7 @@ static std::string get_public_ip() {
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
         if (!pipe) {
             // Return custom error code and message
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "curl command not found"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, "curl command not found");
         }
 
         if (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
@@ -235,7 +214,7 @@ static std::string get_public_ip() {
         }
 
         if (!ip.empty() && ip.find('.') != std::string::npos) {
-            return nlohmann::json{{"public_ip", ip}}.dump();
+            return mcp::protocol::generate_result(nlohmann::json{{"public_ip", ip}});
         } else {
 // If the IP is not obtained correctly, return an error message
 // Try to use foreign - accessible IP query services
@@ -246,10 +225,8 @@ static std::string get_public_ip() {
 #endif
             std::unique_ptr<FILE, decltype(&pclose)> foreign_pipe(popen(foreign_cmd.c_str(), "r"), pclose);
             if (!foreign_pipe) {
-                return nlohmann::json{
-                        {"error", {{"code", -32000},// Custom error code
-                                   {"message", "curl command not found when trying foreign service"}}}}
-                        .dump();
+                return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                     "curl command not found when trying foreign service");
             }
             std::array<char, 128> foreign_buffer;
             if (fgets(foreign_buffer.data(), foreign_buffer.size(), foreign_pipe.get()) != nullptr) {
@@ -257,21 +234,17 @@ static std::string get_public_ip() {
                 ip.erase(std::remove(ip.begin(), ip.end(), '\n'), ip.end());
             }
             if (!ip.empty() && ip.find('.') != std::string::npos) {
-                return nlohmann::json{{"public_ip", ip}}.dump();
+                return mcp::protocol::generate_result(nlohmann::json{{"public_ip", ip}});
             } else {
                 // Return custom error code and message if still failed
-                return nlohmann::json{
-                        {"error", {{"code", -32000},// Custom error code
-                                   {"message", "Failed to get public IP after trying both domestic and foreign services"}}}}
-                        .dump();
+                return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                     "Failed to get public IP after trying both domestic and foreign services");
             }
         }
     } catch (const std::exception &e) {
         // If an exception occurs, return an error message with the exception details
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "Failed to get public IP: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "Failed to get public IP: " + std::string(e.what()));
     }
 }
 

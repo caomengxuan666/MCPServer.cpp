@@ -19,9 +19,7 @@ static std::string http_get(const std::string &url) {
         std::smatch url_match;
 
         if (!std::regex_match(url, url_match, url_regex)) {
-            return nlohmann::json{
-                    {"error", {{"code", -32000}, {"message", "Invalid URL format"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, "Invalid URL format");
         }
 
         std::string scheme = url_match[1];
@@ -40,20 +38,16 @@ static std::string http_get(const std::string &url) {
         auto res = client.Get(path.c_str());
         if (!res) {
             // Return custom error code and message, consistent with safe_system_plugin
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Request failed: Network error or invalid URL"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                 "Request failed: Network error or invalid URL");
         }
 
         // Return only the body content to conform to MCP protocol
-        return res->body;
+        return mcp::protocol::generate_result(nlohmann::json{{"content", res->body}});
     } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "HTTP GET request failed: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "HTTP GET request failed: " + std::string(e.what()));
     }
 }
 
@@ -65,9 +59,7 @@ static std::string http_post(const std::string &url, const std::string &body) {
         std::smatch url_match;
 
         if (!std::regex_match(url, url_match, url_regex)) {
-            return nlohmann::json{
-                    {"error", {{"code", -32000}, {"message", "Invalid URL format"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, "Invalid URL format");
         }
 
         std::string scheme = url_match[1];
@@ -86,20 +78,16 @@ static std::string http_post(const std::string &url, const std::string &body) {
         auto res = client.Post(path.c_str(), body, "application/json");
         if (!res) {
             // Return custom error code and message, consistent with safe_system_plugin
-            return nlohmann::json{
-                    {"error", {{"code", -32000},// Custom error code
-                               {"message", "Request failed: Network error or invalid URL"}}}}
-                    .dump();
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                                 "Request failed: Network error or invalid URL");
         }
 
         // Return only the body content to conform to MCP protocol
-        return res->body;
+        return mcp::protocol::generate_result(nlohmann::json{{"content", res->body}});
     } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
-        return nlohmann::json{
-                {"error", {{"code", -32000},// Custom error code
-                           {"message", "HTTP POST request failed: " + std::string(e.what())}}}}
-                .dump();
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                                             "HTTP POST request failed: " + std::string(e.what()));
     }
 }
 

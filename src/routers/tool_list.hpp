@@ -40,14 +40,4 @@ namespace mcp::routers {
         resp.result = nlohmann::json{{"tools", tools_json}};
         return resp;
     }
-
-    /**
-     * @brief Handle tool invocation request with reconnection support
-     *        Uses only Event-ID for resume.
-     * @param req RPC request
-     * @param registry Tool registry
-     * @param session Transport session
-     * @param session_id Unique session identifier
-     * @return Response (SSE stream for streaming tools)
-     */
 }// namespace mcp::routers
