@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 namespace fs = std::filesystem;
 
@@ -41,11 +42,15 @@ int main(int argc, char *argv[]) {
         ofs << "    std::string error;\n";
         ofs << "};\n\n";
         ofs << "// Generator next function for streaming tools\n";
-        ofs << "static int " << argv[1] << "_next(void* generator, const char** result_json) {\n";
+        ofs << "static int " << argv[1] << "_next(void* generator, const char** result_json, MCPError *error) {\n";
         ofs << "    // Add your streaming logic here\n";
         ofs << "    // Return 0 to continue streaming, 1 to stop\n";
         ofs << "    if (!generator) {\n";
         ofs << "        *result_json = R\"({\"error\": \"Invalid generator pointer\"})\";\n";
+        ofs << "        if (error) {\n";
+        ofs << "            error->code = 1;\n";
+        ofs << "            error->message = \"Invalid generator pointer\";\n";
+        ofs << "        }\n";
         ofs << "        return 1;\n";
         ofs << "    }\n\n";
         ofs << "    auto* gen = static_cast<" << argv[1] << "Generator*>(generator);\n";
@@ -53,6 +58,10 @@ int main(int argc, char *argv[]) {
         ofs << "    // Check if there's an error\n";
         ofs << "    if (!gen->error.empty()) {\n";
         ofs << "        *result_json = gen->error.c_str();\n";
+        ofs << "        if (error) {\n";
+        ofs << "            error->code = 2;\n";
+        ofs << "            error->message = gen->error.c_str();\n";
+        ofs << "        }\n";
         ofs << "        return 1;\n";
         ofs << "    }\n\n";
         ofs << "    // Check if streaming should stop\n";
@@ -68,6 +77,10 @@ int main(int argc, char *argv[]) {
         ofs << "                             {\"params\", {{\"text\", \"Example streamed content\"}}}})\n";
         ofs << "                     .dump();\n\n";
         ofs << "    *result_json = buffer.c_str();\n";
+        ofs << "    if (error) {\n";
+        ofs << "        error->code = 0; // No error\n";
+        ofs << "        error->message = nullptr;\n";
+        ofs << "    }\n";
         ofs << "    return 0; // Continue streaming\n";
         ofs << "}\n\n";
         ofs << "// Generator free function for streaming tools\n";
@@ -91,7 +104,7 @@ int main(int argc, char *argv[]) {
         ofs << "        return nullptr;\n";
         ofs << "    }\n";
         ofs << "}\n\n";
-        ofs << "extern \"C\" MCP_API const char *call_tool(const char *name, const char *args_json) {\n";
+        ofs << "extern \"C\" MCP_API const char *call_tool(const char *name, const char *args_json, MCPError *error) {\n";
         ofs << "    try {\n";
         ofs << "        auto args = nlohmann::json::parse(args_json);\n";
         ofs << "        std::string tool_name = name;\n\n";
@@ -108,8 +121,16 @@ int main(int argc, char *argv[]) {
         ofs << "        //     // Initialize your generator here\n";
         ofs << "        //     return reinterpret_cast<const char*>(gen);\n";
         ofs << "        // }\n\n";
+        ofs << "        if (error) {\n";
+        ofs << "            error->code = 3;\n";
+        ofs << "            error->message = (\"Unknown tool: \" + tool_name).c_str();\n";
+        ofs << "        }\n";
         ofs << "        return strdup((nlohmann::json{{\"error\", \"Unknown tool: \" + tool_name}}.dump()).c_str());\n";
         ofs << "    } catch (const std::exception &e) {\n";
+        ofs << "        if (error) {\n";
+        ofs << "            error->code = 4;\n";
+        ofs << "            error->message = e.what();\n";
+        ofs << "        }\n";
         ofs << "        return strdup((nlohmann::json{{\"error\", e.what()}}.dump()).c_str());\n";
         ofs << "    }\n";
         ofs << "}\n\n";
@@ -120,10 +141,10 @@ int main(int argc, char *argv[]) {
         ofs << "}\n\n";
         ofs << "// For streaming tools, implement these functions\n";
         ofs << "extern \"C\" MCP_API StreamGeneratorNext get_stream_next() {\n";
-        ofs << "    return " << argv[1] << "_next;\n";
+        ofs << "    return reinterpret_cast<StreamGeneratorNext>(" << argv[1] << "_next);\n";
         ofs << "}\n\n";
         ofs << "extern \"C\" MCP_API StreamGeneratorFree get_stream_free() {\n";
-        ofs << "    return " << argv[1] << "_free;\n";
+        ofs << "    return reinterpret_cast<StreamGeneratorFree>(" << argv[1] << "_free);\n";
         ofs << "}\n";
     }
 
