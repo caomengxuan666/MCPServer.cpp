@@ -2,6 +2,7 @@
 #include "core/logger.h"
 #include "core/server.h"
 
+
 /**
  * Entry point of the MCP server application.
  * This function initializes the configuration, sets up logging, builds the server instance,
@@ -18,7 +19,7 @@ int main() {
         // Step 2: Load the full configuration from the INI file.
         auto config = mcp::config::GlobalConfig::load();
 
-        // Step 4: Initialize the asynchronous logger using settings from the config.
+        // Step 3: Initialize the asynchronous logger using settings from the config.
         // Parameters include log file path, log level, maximum file size, and number of rotation files.
         mcp::core::initializeAsyncLogger(
                 config.server.log_path,
@@ -39,9 +40,8 @@ int main() {
         // Log that the application has started successfully.
         MCP_INFO("MCPServer.cpp started with configuration from '{}'", mcp::config::get_config_file_path());
 
-        // Step 3: Output all configuration values to the debug log for inspection.
+        // Step 4: Output all configuration values to the debug log for inspection.
         mcp::config::print_config(config);
-
 
         // Step 5: Build the MCP server instance using the configuration.
         // Configure transport layers and plugin directory based on settings.
@@ -61,7 +61,7 @@ int main() {
         MCP_INFO("MCPServer.cpp is ready.");
         MCP_INFO("Send JSON-RPC messages via /mcp.");
 
-        // Step 6: Start the server's main loop.
+        // Step 6.: Start the server's main loop.
         // This call is expected to block until the server is stopped.
         server->run();
 

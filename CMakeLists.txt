@@ -98,6 +98,7 @@ if(UNIX)
         mcp_protocol
         -Wl,--end-group
         mcp_plugin_sdk
+        mcp_plugin_hub
     )
 else()
     target_link_libraries(mcp-server++ PRIVATE
@@ -106,6 +107,7 @@ else()
         mcp_transport
         mcp_protocol
         mcp_plugin_sdk
+        mcp_plugin_hub
     )
 endif()
 
