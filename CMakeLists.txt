@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(MCPServer.cpp LANGUAGES CXX VERSION 1.0.3.9)
+project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.4.0)
 
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_VISIBILITY_PRESET default)
@@ -81,6 +81,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 add_subdirectory(src)
 add_subdirectory(plugins)
 add_subdirectory(tools)
+add_subdirectory(third_party/miniz)
 
 # turn off mimalloc tests and examples
 set(MI_BUILD_TESTS OFF CACHE BOOL "Build mimalloc tests" FORCE)

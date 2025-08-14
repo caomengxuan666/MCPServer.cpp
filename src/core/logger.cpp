@@ -69,6 +69,8 @@ namespace mcp {
             }
         }
 
+        bool MCPLogger::enable_file_logging_ = false;
+
         void initializeAsyncLogger(const std::string &log_path, const std::string &log_level, size_t max_file_size,
                                    size_t max_files) {
             // Initialize thread pool
@@ -121,7 +123,10 @@ namespace mcp {
             }
 
             // Create async logger
-            g_logger = std::make_shared<spdlog::logger>("mcp_logger", spdlog::sinks_init_list{console_sink, file_sink});
+            if (MCPLogger::is_file_sink_enabled())
+                g_logger = std::make_shared<spdlog::logger>("mcp_logger", spdlog::sinks_init_list{console_sink, file_sink});
+            else
+                g_logger = std::make_shared<spdlog::logger>("mcp_logger", spdlog::sinks_init_list{console_sink});
             g_logger->set_level(level_val);
             g_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%^%l%$] %v");
 

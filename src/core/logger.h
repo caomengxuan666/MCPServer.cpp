@@ -83,10 +83,16 @@ namespace mcp {
             void critical(const char *msg);
 
             void set_level(LogLevel level);
+            static void enable_file_sink(){enable_file_logging_ = true;}
+            static void disable_file_sink(){enable_file_logging_ = false;}
+            static bool is_file_sink_enabled() {return enable_file_logging_;}
+
             LogLevel get_level() const;
 
         private:
             MCPLogger() = default;
+
+            static bool enable_file_logging_;
 
             template<typename... Args>
             void log(LogLevel level, fmt::format_string<Args...> fmt, Args &&...args) {
@@ -169,6 +175,5 @@ namespace mcp {
         void critical(fmt::format_string<Args...> fmt, Args &&...args) {
             MCPLogger::instance().critical(fmt, std::forward<Args>(args)...);
         }
-
     }// namespace core
 }// namespace mcp

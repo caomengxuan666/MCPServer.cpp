@@ -27,7 +27,7 @@ enable_stdio=1
 ;Enable HTTP transport (1=enable, 0=disable)
 enable_http=1
 ;Enable HTTPS transport (1=enable, 0=disable)
-enable_https=0
+enable_https=1
 ;SSL certificate file path (required for HTTPS)
 ssl_cert_file=certs/server.crt
 ;SSL private key file path (required for HTTPS)
@@ -48,3 +48,5 @@ download_route=/self/latest/download
 plugin_install_dir=plugins_install
 ;Directory for enabling plugins
 plugin_enable_dir=plugins
+tools_enable_dir=configs
+tools_install_dir=plugins_install

@@ -26,6 +26,7 @@ int main() {
                 config.server.log_level,
                 config.server.max_file_size,
                 config.server.max_files);
+        mcp::core::MCPLogger::enable_file_sink();
 
         auto address = config.server.ip;
 

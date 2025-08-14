@@ -102,7 +102,7 @@ namespace mcp::plugins {
         // It is supported, but parameters are not supported yet
         // TODO The server doesn't support get release info by id temporarily.
         ReleaseInfo getReleaseInfo(const std::string &plugin_id = "");
-        PluginHub() = default;
+        PluginHub();
         ~PluginHub() = default;
 
     private:

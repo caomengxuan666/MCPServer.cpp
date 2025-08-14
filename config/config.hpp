@@ -135,6 +135,8 @@ namespace mcp {
                     config.download_route = plugin_hub_section["download_route"].String().empty() ? "/self/latest/download" : plugin_hub_section["download_route"].String();
                     config.plugin_install_dir = plugin_hub_section["plugin_install_dir"].String().empty() ? "plugins_install" : plugin_hub_section["plugin_install_dir"].String();
                     config.plugin_enable_dir = plugin_hub_section["plugin_enable_dir"].String().empty() ? "plugins" : plugin_hub_section["plugin_enable_dir"].String();
+                    config.tools_install_dir = plugin_hub_section["tools_install_dir"].String().empty() ? "plugins_install" : plugin_hub_section["tools_install_dir"].String();
+                    config.tools_enable_dir = plugin_hub_section["tools_enable_dir"].String().empty() ? "configs" : plugin_hub_section["tools_enable_dir"].String();
                     return config;
                 } catch (const std::exception &e) {
                     std::cerr << "Failed to load plugin hub config: " << e.what() << std::endl;
@@ -224,6 +226,8 @@ namespace mcp {
                 ini.set("plugin_hub", "download_route", "/self/latest/download");
                 ini.set("plugin_hub", "plugin_install_dir", "plugins_install");
                 ini.set("plugin_hub", "plugin_enable_dir", "plugins");
+                ini.set("plugin_hub", "tools_enable_dir", "configs");
+                ini.set("plugin_hub", "tools_install_dir", "plugins_install");
 
                 // Add comments for server section
                 ini.setComment("server", "ip", "IP address the server binds to");
