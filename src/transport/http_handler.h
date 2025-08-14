@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-
+#include "Auth/AuthManager.hpp"
 namespace mcp::transport {
 
     // Forward declaration
@@ -32,9 +32,39 @@ namespace mcp::transport {
                 std::shared_ptr<Session> session,
                 const std::string &session_id)>;
 
+        // AOP callback function types
+        using BeforeRequestCallback = std::function<void(
+                const HttpRequest &request,
+                const std::string &session_id)>;
+
+        using AfterRequestCallback = std::function<void(
+                const HttpRequest &request,
+                const std::string &response,
+                int status_code,
+                const std::string &session_id)>;
+
+        using OnErrorCallback = std::function<void(
+                const std::string &error_message,
+                const std::string &session_id)>;
+
         // Constructor
-        explicit HttpHandler(MessageCallback on_message)
-            : on_message_(std::move(on_message)) {}
+        explicit HttpHandler(
+                MessageCallback on_message,
+                std::shared_ptr<AuthManagerBase> auth_manager = nullptr)
+            : on_message_(std::move(on_message)), auth_manager_(std::move(auth_manager)) {}
+
+        // AOP callback setters
+        void set_before_request_callback(BeforeRequestCallback callback) {
+            before_request_callback_ = std::move(callback);
+        }
+
+        void set_after_request_callback(AfterRequestCallback callback) {
+            after_request_callback_ = std::move(callback);
+        }
+
+        void set_on_error_callback(OnErrorCallback callback) {
+            on_error_callback_ = std::move(callback);
+        }
 
         // Parse HTTP request
         std::optional<HttpRequest> parse_request(const std::string &raw_request);
@@ -73,11 +103,27 @@ namespace mcp::transport {
                 const std::string &key);
 
     private:
-        MessageCallback on_message_;// Message callback function
+        MessageCallback on_message_;                   // Message callback function
+        BeforeRequestCallback before_request_callback_;// AOP: Before request callback
+        AfterRequestCallback after_request_callback_;  // AOP: After request callback
+        OnErrorCallback on_error_callback_;            // AOP: Error callback
+        std::shared_ptr<AuthManagerBase> auth_manager_;
 
+        // Template function to handle common logic for both Session and SslSession
+        template<typename SessionType>
+        asio::awaitable<void> handle_request_impl(
+                std::shared_ptr<SessionType> session,
+                const std::string &raw_request);
 
         asio::awaitable<void> discard_existing_buffer(std::shared_ptr<Session> session);
         asio::awaitable<void> discard_existing_buffer(std::shared_ptr<SslSession> session);
+
+        // Template function to send HTTP response for both Session and SslSession
+        template<typename SessionType>
+        asio::awaitable<void> send_http_response_impl(
+                std::shared_ptr<SessionType> session,
+                const std::string &body,
+                int status_code);
 
         // Fully read and discard remaining request body
         asio::awaitable<void> discard_remaining_request_body(

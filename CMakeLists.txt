@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.4.0)
+project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.4.1)
 
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_VISIBILITY_PRESET default)
@@ -82,6 +82,7 @@ add_subdirectory(src)
 add_subdirectory(plugins)
 add_subdirectory(tools)
 add_subdirectory(third_party/miniz)
+add_subdirectory(utils)
 
 # turn off mimalloc tests and examples
 set(MI_BUILD_TESTS OFF CACHE BOOL "Build mimalloc tests" FORCE)
@@ -100,6 +101,7 @@ if(UNIX)
         -Wl,--end-group
         mcp_plugin_sdk
         mcp_plugin_hub
+        mcp_utils
     )
 else()
     target_link_libraries(mcp-server++ PRIVATE
@@ -109,6 +111,7 @@ else()
         mcp_protocol
         mcp_plugin_sdk
         mcp_plugin_hub
+        mcp_utils
     )
 endif()
 

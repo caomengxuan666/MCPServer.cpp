@@ -1,6 +1,8 @@
 #include "config/config.hpp"// Configuration management using INI file
 #include "core/logger.h"
 #include "core/server.h"
+#include "Auth/AuthManager.hpp"
+#include "utils/auth_utils.h"
 
 
 /**
@@ -44,6 +46,30 @@ int main() {
         // Step 4: Output all configuration values to the debug log for inspection.
         mcp::config::print_config(config);
 
+        // Create auth manager if auth is enabled
+        std::shared_ptr<AuthManagerBase> auth_manager = nullptr;
+        if (config.server.enable_auth) {
+            MCP_DEBUG("Authentication is enabled with type: {}", config.server.auth_type);
+            
+            // Load auth keys from file
+            auto auth_keys = mcp::utils::load_auth_keys_from_file(config.server.auth_env_file);
+            
+            if (auth_keys.empty()) {
+                MCP_WARN("Authentication is enabled but no keys were loaded from {}", config.server.auth_env_file);
+            } else {
+                if (config.server.auth_type == "X-API-Key") {
+                    auth_manager = std::make_shared<AuthManagerXApi>(auth_keys);
+                } else if (config.server.auth_type == "Bearer") {
+                    auth_manager = std::make_shared<AuthManagerBearer>(auth_keys);
+                } else {
+                    MCP_WARN("Unknown authentication type: {}, using X-API-Key as default", config.server.auth_type);
+                    auth_manager = std::make_shared<AuthManagerXApi>(auth_keys);
+                }
+            }
+        } else {
+            MCP_DEBUG("Authentication is disabled");
+        }
+
         // Step 5: Build the MCP server instance using the configuration.
         // Configure transport layers and plugin directory based on settings.
         auto server = mcp::core::MCPserver::Builder{}
@@ -56,6 +82,7 @@ int main() {
                               .with_https_port(config.server.https_port)       // Set HTTPS port
                               .with_ssl_certificates(config.server.ssl_cert_file,
                                                      config.server.ssl_key_file, config.server.ssl_dh_params_file)// Set SSL certificate files
+                              .with_auth_manager(auth_manager)                 // Set authentication manager
                               .build();                                                                           // Construct the server instance
 
         // Notify that the server is ready to accept connections.

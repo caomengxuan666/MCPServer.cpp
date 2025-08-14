@@ -10,6 +10,7 @@
 #include "mcp_dispatcher.h"
 #include "transport/http_transport.h"
 #include "transport/https_transport.h"
+#include "Auth/AuthManager.hpp"
 #include <asio/io_context.hpp>
 #include <memory>
 #include <vector>
@@ -51,6 +52,7 @@ namespace mcp::core {
 
 
         asio::io_context io_context_;
+        std::shared_ptr<AuthManagerBase> auth_manager_; // Authentication manager
     };
 
     class MCPserver::Builder {
@@ -82,6 +84,10 @@ namespace mcp::core {
             enable_stdio_transport_ = enable;
             return *this;
         }
+        Builder &with_auth_manager(std::shared_ptr<AuthManagerBase> auth_manager) {
+            auth_manager_ = auth_manager;
+            return *this;
+        }
         std::unique_ptr<MCPserver> build();
 
     private:
@@ -96,6 +102,7 @@ namespace mcp::core {
         std::string cert_file_ = "server.crt";
         std::string private_key_file_ = "server.key";
         std::string dh_params_file_ = "dh2048.pem";
+        std::shared_ptr<AuthManagerBase> auth_manager_ = nullptr; // Authentication manager
     };
 
 }// namespace mcp::core

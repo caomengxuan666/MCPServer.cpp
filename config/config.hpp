@@ -51,6 +51,8 @@ namespace mcp {
             std::string ssl_cert_file;     // SSL certificate file path
             std::string ssl_key_file;      // SSL private key file path
             std::string ssl_dh_params_file;// Diffie-Hellman parameters file path
+            std::string auth_type;         // Authentication type (X-API-Key, Bearer, etc.)
+            std::string auth_env_file;     // Path to the file containing auth keys/tokens
             size_t max_file_size;          // Maximum size per log file (bytes)
             size_t max_files;              // Maximum number of log files to retain
             unsigned short port;           // Legacy server listening port
@@ -59,6 +61,7 @@ namespace mcp {
             bool enable_stdio;             // Enable stdio transport protocol
             bool enable_http;              // Enable HTTP transport protocol
             bool enable_https;             // Enable HTTPS transport protocol
+            bool enable_auth;              // Enable authentication
 
             /**
              * Loads server configuration from INI file
@@ -81,6 +84,8 @@ namespace mcp {
                     config.ssl_cert_file = server_section["ssl_cert_file"].String().empty() ? "certs/server.crt" : server_section["ssl_cert_file"].String();
                     config.ssl_key_file = server_section["ssl_key_file"].String().empty() ? "certs/server.key" : server_section["ssl_key_file"].String();
                     config.ssl_dh_params_file = server_section["ssl_dh_params_file"].String().empty() ? "certs/dh2048.pem" : server_section["ssl_dh_params_file"].String();
+                    config.auth_type = server_section["auth_type"].String().empty() ? "X-API-Key" : server_section["auth_type"].String();
+                    config.auth_env_file = server_section["auth_env_file"].String().empty() ? ".env.auth" : server_section["auth_env_file"].String();
 
                     // Numeric values with explicit conversion
                     config.max_file_size = server_section["max_file_size"].String().empty() ? 10485760 : static_cast<size_t>(server_section["max_file_size"]);
@@ -93,6 +98,7 @@ namespace mcp {
                     config.enable_stdio = server_section["enable_stdio"].String().empty() ? true : static_cast<bool>(server_section["enable_stdio"]);
                     config.enable_http = server_section["enable_http"].String().empty() ? false : static_cast<bool>(server_section["enable_http"]);
                     config.enable_https = server_section["enable_https"].String().empty() ? false : static_cast<bool>(server_section["enable_https"]);
+                    config.enable_auth = server_section["enable_auth"].String().empty() ? false : static_cast<bool>(server_section["enable_auth"]);
 
                     return config;
                 } catch (const std::exception &e) {
@@ -215,6 +221,9 @@ namespace mcp {
                 ini.set("server", "enable_stdio", 1);
                 ini.set("server", "enable_http", 1);
                 ini.set("server", "enable_https", 0);
+                ini.set("server", "enable_auth", 0);
+                ini.set("server", "auth_type", "X-API-Key");
+                ini.set("server", "auth_env_file", ".env.auth");
                 ini.set("server", "ssl_cert_file", "certs/server.crt");
                 ini.set("server", "ssl_key_file", "certs/server.key");
                 ini.set("server", "ssl_dh_params_file", "certs/dh2048.pem");
@@ -284,6 +293,9 @@ namespace mcp {
             MCP_DEBUG("SSL Certificate File: {}", config.server.ssl_cert_file);
             MCP_DEBUG("SSL Key File: {}", config.server.ssl_key_file);
             MCP_DEBUG("SSL DH Parameters File: {}", config.server.ssl_dh_params_file);
+            MCP_DEBUG("Authentication Enabled: {}", config.server.enable_auth ? "Yes" : "No");
+            MCP_DEBUG("Authentication Type: {}", config.server.auth_type);
+            MCP_DEBUG("Auth Environment File: {}", config.server.auth_env_file);
             MCP_DEBUG("Max Log File Size: {}", config.server.max_file_size);
             MCP_DEBUG("Max Log Files: {}", config.server.max_files);
             MCP_DEBUG("Stdio Transport Enabled: {}", config.server.enable_stdio ? "Yes" : "No");

@@ -1,14 +1,15 @@
 #include "https_transport.h"
+#include "base_transport.h"
 #include "core/executable_path.h"
 #include "core/io_context_pool.hpp"
 #include "core/logger.h"
+#include "http_handler.h"
 #include "ssl_session.h"
 #include <asio/ssl/context.hpp>
 #include <filesystem>
 #include <fstream>
 #include <utils/utf8_encode.h>
 
-using asio::use_awaitable;
 
 namespace mcp::transport {
 
@@ -18,14 +19,15 @@ namespace mcp::transport {
      * @param port Port number to listen on
      * @param cert_file Path to SSL certificate file
      * @param private_key_file Path to SSL private key file
+     * @param auth_manager Authentication manager
      */
     HttpsTransport::HttpsTransport(const std::string &address, unsigned short port,
-                                   const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file)
-        : io_context_(),
-          acceptor_(io_context_, asio::ip::tcp::endpoint(asio::ip::make_address(address), port)),
+                                   const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file,
+                                   std::shared_ptr<AuthManagerBase> auth_manager)
+        : BaseTransport(address, port),
           ssl_context_(asio::ssl::context::tlsv12_server),// Explicit TLS server mode
-          work_guard_(asio::make_work_guard(io_context_)),
-          is_running_(false) {
+          is_running_(false),
+          auth_manager_(auth_manager) {
 
         // Resolve certificate paths relative to executable directory
         std::filesystem::path executable_dir(mcp::core::getExecutableDirectory());
@@ -87,7 +89,7 @@ namespace mcp::transport {
             MCP_ERROR("Failed to open certificate file (invalid handle): {}", cert_file);
             throw std::runtime_error("Certificate file handle invalid");
         }
-        ssl_context_.use_certificate_chain_file(cert_file, ec);
+        (void) ssl_context_.use_certificate_chain_file(cert_file, ec);
         if (ec) {
             MCP_ERROR("Failed to load certificate: {} - {}", cert_file, ec.message());
             throw std::runtime_error("Certificate load failed");
@@ -100,7 +102,7 @@ namespace mcp::transport {
             MCP_ERROR("Failed to open private key file (invalid handle): {}", key_file);
             throw std::runtime_error("Private key file handle invalid");
         }
-        ssl_context_.use_private_key_file(key_file, asio::ssl::context::pem, ec);
+        (void) ssl_context_.use_private_key_file(key_file, asio::ssl::context::pem, ec);
         if (ec) {
             MCP_ERROR("Failed to load private key: {} - {}", key_file, ec.message());
             throw std::runtime_error("Private key load failed");
@@ -126,7 +128,13 @@ namespace mcp::transport {
      * @return True if successful
      */
     bool HttpsTransport::start(MessageCallback on_message) {
-        handler_ = std::make_unique<HttpHandler>(std::move(on_message));
+        if (auth_manager_) {
+            MCP_DEBUG("HTTPS transport auth manager initialized with type: {}", auth_manager_->type());
+        } else {
+            MCP_DEBUG("HTTPS transport auth manager not initialized (auth disabled)");
+        }
+
+        handler_ = std::make_unique<HttpHandler>(std::move(on_message), auth_manager_);
         is_running_ = true;
 
         MCP_INFO("Streamable HTTPS Transport started on {}:{}",
@@ -134,12 +142,12 @@ namespace mcp::transport {
                  acceptor_.local_endpoint().port());
 
         // Launch main accept loop
-        asio::co_spawn(io_context_, accept_loop(), asio::detached);
+        asio::co_spawn(get_io_context(), accept_loop(), asio::detached);
 
         // Run IO context in dedicated thread
         std::thread([this]() {
             try {
-                io_context_.run();
+                get_io_context().run();
             } catch (const std::exception &e) {
                 MCP_ERROR("Error in HTTPS io_context: {}", e.what());
             }
@@ -155,7 +163,7 @@ namespace mcp::transport {
         try {
             while (is_running_) {
                 // Accept new TCP connection
-                asio::ip::tcp::socket raw_socket(io_context_);
+                asio::ip::tcp::socket raw_socket(get_io_context());
                 co_await acceptor_.async_accept(raw_socket, asio::use_awaitable);
 
                 // Validate socket state
@@ -187,7 +195,7 @@ namespace mcp::transport {
                 auto session = std::make_shared<SslSession>(
                         std::move(*session_socket),// Transfer socket ownership
                         ssl_context_);
-                session_socket.release();// Prevent double destruction
+                (void) session_socket.release();// Prevent double destruction
 
                 // Final socket validation
                 if (!session->get_stream().lowest_layer().is_open()) {
@@ -209,13 +217,20 @@ namespace mcp::transport {
     }
 
     /**
+     * @brief Legacy acceptor method (not used).
+     */
+    asio::awaitable<void> HttpsTransport::do_accept() {
+        co_return;
+    }
+
+    /**
      * @brief Stop the HTTPS transport and clean up resources.
      */
     void HttpsTransport::stop() {
         is_running_ = false;
         acceptor_.close();
         work_guard_.reset();
-        io_context_.stop();
+        get_io_context().stop();
     }
 
 }// namespace mcp::transport

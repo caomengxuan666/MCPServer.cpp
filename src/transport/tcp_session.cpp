@@ -1,34 +1,16 @@
 #include "tcp_session.h"
 #include "core/logger.h"
 #include "http_handler.h"
-#include <iomanip>
-#include <random>
+#include "utils/session_id.h"
 
 
 using asio::use_awaitable;
 
 namespace mcp::transport {
 
-    /**
-     * @brief Construct a TcpSession with a socket.
-     * @param socket TCP socket to take ownership of
-     */
-    static std::string generate_session_id() noexcept {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<uint64_t> dist;
-
-        uint64_t part1 = dist(gen);
-        uint64_t part2 = dist(gen);
-
-        std::stringstream ss;
-        ss << std::hex << std::setw(16) << std::setfill('0') << part1
-           << std::hex << std::setw(16) << std::setfill('0') << part2;
-        return ss.str();
-    }
     TcpSession::TcpSession(asio::ip::tcp::socket socket)
         : socket_(std::move(socket)) {
-        session_id_ = generate_session_id();// Generate ID from base class helper
+        session_id_ = utils::generate_session_id();// Generate ID from base class helper
     }
 
     /**

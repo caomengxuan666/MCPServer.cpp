@@ -3,6 +3,8 @@
 #include "core/logger.h"
 #include "session.h"
 #include "tcp_session.h"
+#include "base_transport.h"
+#include "http_handler.h"
 
 
 using asio::use_awaitable;
@@ -13,11 +15,12 @@ namespace mcp::transport {
      * @brief Construct HTTP transport with specified address and port.
      * @param address IP address to bind to
      * @param port Port number to listen on
+     * @param auth_manager Authentication manager
      */
-    HttpTransport::HttpTransport(const std::string &address, unsigned short port)
-        : io_context_(),
-          acceptor_(io_context_, asio::ip::tcp::endpoint(asio::ip::make_address(address), port)),
-          work_guard_(asio::make_work_guard(io_context_)) {
+    HttpTransport::HttpTransport(const std::string &address, unsigned short port, std::shared_ptr<AuthManagerBase> auth_manager)
+        : BaseTransport(address, port),
+          is_running_(false),
+          auth_manager_(auth_manager) {
         MCP_INFO("HTTP Transport initialized on {}:{}", address, port);
     }
 
@@ -34,15 +37,22 @@ namespace mcp::transport {
      * @return True if successful
      */
     bool HttpTransport::start(MessageCallback on_message) {
-        handler_ = std::make_unique<HttpHandler>(std::move(on_message));
+        if (auth_manager_) {
+            MCP_DEBUG("HTTP transport auth manager initialized with type: {}", auth_manager_->type());
+        } else {
+            MCP_DEBUG("HTTP transport auth manager not initialized (auth disabled)");
+        }
+        
+        handler_ = std::make_unique<HttpHandler>(std::move(on_message), auth_manager_);
+        is_running_ = true;
         MCP_INFO("Streamable HTTP Transport started on {}:{}",
                  acceptor_.local_endpoint().address().to_string(),
                  acceptor_.local_endpoint().port());
 
         // Launch acceptor loop to handle incoming connections
-        asio::co_spawn(io_context_, [this]() -> asio::awaitable<void> {
+        asio::co_spawn(get_io_context(), [this]() -> asio::awaitable<void> {
             try {
-                while (true) {
+                while (is_running_) {
                     // Accept new TCP connection
                     auto socket = co_await acceptor_.async_accept(use_awaitable);
                     MCP_DEBUG("HTTP client connected from {}:{}", 
@@ -67,6 +77,15 @@ namespace mcp::transport {
                 MCP_ERROR("Error accepting HTTP connections: {}", e.what());
             } }, asio::detached);
 
+        // Run IO context in dedicated thread
+        std::thread([this]() {
+            try {
+                get_io_context().run();
+            } catch (const std::exception &e) {
+                MCP_ERROR("Error in HTTP io_context: {}", e.what());
+            }
+        }).detach();
+
         return true;
     }
 
@@ -81,9 +100,10 @@ namespace mcp::transport {
      * @brief Stop the HTTP transport and clean up resources.
      */
     void HttpTransport::stop() {
+        is_running_ = false;
         acceptor_.close();
         work_guard_.reset();
-        io_context_.stop();
+        get_io_context().stop();
     }
 
 }// namespace mcp::transport

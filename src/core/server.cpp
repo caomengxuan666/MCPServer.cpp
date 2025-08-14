@@ -223,7 +223,7 @@ namespace mcp::core {
 
     bool MCPserver::start_http_transport(uint16_t port, const std::string &address) {
         try {
-            http_transport_ = std::make_unique<mcp::transport::HttpTransport>(address, port);
+            http_transport_ = std::make_unique<mcp::transport::HttpTransport>(address, port, auth_manager_);
 
             auto success = http_transport_->start([this](const std::string &msg,
                                                          std::shared_ptr<mcp::transport::Session> session,
@@ -250,7 +250,7 @@ namespace mcp::core {
     bool MCPserver::start_https_transport(uint16_t port, const std::string &address,
                                           const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file) {
         try {
-            https_transport_ = std::make_unique<mcp::transport::HttpsTransport>(address, port, cert_file, private_key_file, dh_params_file);
+            https_transport_ = std::make_unique<mcp::transport::HttpsTransport>(address, port, cert_file, private_key_file, dh_params_file, auth_manager_);
 
             auto success = https_transport_->start([this](const std::string &msg,
                                                           std::shared_ptr<mcp::transport::Session> session,

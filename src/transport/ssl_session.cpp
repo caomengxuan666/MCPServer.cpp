@@ -2,35 +2,9 @@
 #include "core/logger.h"
 #include "http_handler.h"
 #include <asio/ssl/error.hpp>
-#include <iomanip>
-#include <random>
-
-
-using asio::use_awaitable;
+#include "utils/session_id.h"
 
 namespace mcp::transport {
-
-    namespace {
-        /**
-         * @brief Generate a random session ID using 128 bits of random data.
-         * @return 32-character hexadecimal string
-         */
-        static std::string generate_session_id() noexcept {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<uint64_t> dist;
-
-            uint64_t part1 = dist(gen);
-            uint64_t part2 = dist(gen);
-
-            std::stringstream ss;
-            ss << std::hex << std::setw(16) << std::setfill('0') << part1
-               << std::hex << std::setw(16) << std::setfill('0') << part2;
-            return ss.str();
-        }
-    }// namespace
-
-
     /**
      * @brief Construct an SslSession with a socket and SSL context.
      * @param socket TCP socket to wrap with SSL
@@ -38,7 +12,7 @@ namespace mcp::transport {
      */
     SslSession::SslSession(asio::ip::tcp::socket socket, asio::ssl::context &ssl_context)
         : ssl_stream_(std::move(socket), ssl_context) {
-        session_id_ = generate_session_id();// Generate unique session ID
+        session_id_ = utils::generate_session_id();// Generate unique session ID
 
         // Validate socket state after construction
         if (!ssl_stream_.lowest_layer().is_open()) {
@@ -223,7 +197,7 @@ namespace mcp::transport {
         MCP_DEBUG("Closing SSL session (ID: {})", session_id_);
 
         // 1. Shutdown SSL layer gracefully
-        ssl_stream_.shutdown(ec);
+        (void)ssl_stream_.shutdown(ec);
         if (ec && ec != asio::error::not_connected && ec != asio::ssl::error::stream_truncated) {
             unsigned long openssl_err = ERR_get_error();
             if (openssl_err != 0) {
@@ -237,7 +211,7 @@ namespace mcp::transport {
         }
 
         // 2. Cancel pending operations
-        ssl_stream_.lowest_layer().cancel(ec);
+        (void)ssl_stream_.lowest_layer().cancel(ec);
         if (ec) {
             MCP_DEBUG("Socket cancel error (session ID: {}): {}", session_id_, ec.message());
         }
@@ -250,12 +224,12 @@ namespace mcp::transport {
         }
 
         // 4. Shutdown and close underlying socket
-        ssl_stream_.lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+        (void)ssl_stream_.lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
         if (ec && ec != asio::error::not_connected) {
             MCP_DEBUG("Socket shutdown error (session ID: {}): {}", session_id_, ec.message());
         }
 
-        ssl_stream_.lowest_layer().close(ec);
+        (void)ssl_stream_.lowest_layer().close(ec);
         if (ec) {
             MCP_DEBUG("Socket close error (session ID: {}): {}", session_id_, ec.message());
         }
