@@ -1,32 +1,38 @@
 // src/business/request_handler.h
 #pragma once
 
-#include "rpc_router.h"
-#include "tool_registry.h"
-#include "transport/stdio_transport.h"
+#include "business/rpc_router.h"
+#include "business/tool_registry.h"
+#include "transport/session.h"
+#include <functional>
 #include <memory>
+#include <string>
 
-namespace mcp::transport {
-    class Session;
-}
+
 namespace mcp::business {
+
+    // Response callback function signature
+    using ResponseCallback = std::function<void(
+            const std::string &,                // response JSON string
+            std::shared_ptr<transport::Session>,// session
+            const std::string &                 // session ID
+            )>;
 
     class RequestHandler {
     public:
-        using ResponseCallback = std::function<void(
-                const std::string &response,
+        explicit RequestHandler(
+                std::shared_ptr<ToolRegistry> registry,
+                ResponseCallback send_response = nullptr);
+
+        void handle_request(
+                const std::string &msg,
                 std::shared_ptr<transport::Session> session,
-                const std::string &session_id)>;
-
-        explicit RequestHandler(std::shared_ptr<ToolRegistry> registry, ResponseCallback send_response);
-
-        void handle_request(const std::string &msg, std::shared_ptr<transport::Session> session, const std::string &session_id);
+                const std::string &session_id);
 
     private:
         std::shared_ptr<ToolRegistry> registry_;
-        mcp::transport::StdioTransport transport_;
-        RpcRouter router_;
         ResponseCallback send_response_;
+        RpcRouter router_;
     };
 
 }// namespace mcp::business

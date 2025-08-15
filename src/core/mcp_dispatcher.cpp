@@ -5,14 +5,7 @@
 #include <sstream>
 
 using namespace mcp::core;
-McpDispatcher::McpDispatcher(std::shared_ptr<business::ToolRegistry> registry) : registry_(std::move(registry)) {
-    if (!registry_) {
-        throw std::runtime_error("ToolRegistry cannot be null");
-    }
-    plugin_manager_ = registry_->get_plugin_manager();
-    if (!plugin_manager_) {
-        throw std::runtime_error("PluginManager cannot be null");
-    }
+McpDispatcher::McpDispatcher() {
 }
 
 void McpDispatcher::send_json_response(std::shared_ptr<mcp::transport::Session> session,

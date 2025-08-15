@@ -99,10 +99,102 @@ namespace mcp::transport {
     }
 
     /**
+     * @brief Stream write data to the TCP socket.
+     * @param message Data to send to client
+     * @param flush Whether to flush the data immediately
+     */
+    asio::awaitable<void> TcpSession::stream_write(const std::string &message, bool flush) {
+        if (!socket_.is_open()) {
+            co_return;
+        }
+        try {
+            // Send the message without clearing the buffer to allow streaming
+            co_await asio::async_write(socket_, asio::buffer(message), use_awaitable);
+            
+            // If flush is requested, ensure data is sent immediately
+            if (flush) {
+                // The async_write operation already flushes, so no additional action needed
+            }
+        } catch (const std::exception &e) {
+            MCP_ERROR("Failed to stream write to TCP socket: {}", e.what());
+            close();
+        }
+        co_return;
+    }
+
+    /**
+     * @brief Write a chunk of data as part of a streaming response.
+     * @param chunk Data chunk to send to client
+     */
+    asio::awaitable<void> TcpSession::write_chunk(const std::string &chunk) {
+        if (!socket_.is_open()) {
+            co_return;
+        }
+        try {
+            if (!streaming_) {
+                MCP_ERROR("Session is not in streaming mode");
+                co_return;
+            }
+
+            // For HTTP chunked transfer encoding, we need to send the chunk size followed by CRLF,
+            // then the chunk data followed by CRLF
+            std::ostringstream chunk_header;
+            chunk_header << std::hex << chunk.size() << "\r\n";
+            
+            // Send chunk header
+            co_await asio::async_write(socket_, asio::buffer(chunk_header.str()), use_awaitable);
+            
+            // Send chunk data
+            if (!chunk.empty()) {
+                co_await asio::async_write(socket_, asio::buffer(chunk), use_awaitable);
+            }
+            
+            // Send trailing CRLF
+            co_await asio::async_write(socket_, asio::buffer("\r\n"), use_awaitable);
+        } catch (const std::exception &e) {
+            MCP_ERROR("Failed to write chunk to TCP socket: {}", e.what());
+            close();
+        }
+        co_return;
+    }
+
+    /**
+     * @brief Start a streaming response by sending appropriate headers.
+     * @param content_type The content type for the streaming response
+     */
+    asio::awaitable<void> TcpSession::start_streaming(const std::string &content_type) {
+        if (!socket_.is_open()) {
+            co_return;
+        }
+        try {
+            // Send HTTP response headers for chunked transfer
+            std::ostringstream headers;
+            headers << "HTTP/1.1 200 OK\r\n";
+            headers << "Content-Type: " << content_type << "\r\n";
+            headers << "Transfer-Encoding: chunked\r\n";
+            headers << "Connection: keep-alive\r\n";
+            headers << "\r\n";
+            
+            co_await asio::async_write(socket_, asio::buffer(headers.str()), use_awaitable);
+            streaming_ = true;
+        } catch (const std::exception &e) {
+            MCP_ERROR("Failed to start streaming: {}", e.what());
+            close();
+        }
+        co_return;
+    }
+
+    /**
      * @brief Close the TCP session and release resources.
      */
     void TcpSession::close() {
         if (!closed_ && socket_.is_open()) {
+            // If in streaming mode, send the final chunk (0-length chunk)
+            if (streaming_) {
+                asio::error_code ec;
+                asio::write(socket_, asio::buffer("0\r\n\r\n", 5), ec); // Final chunk
+            }
+            
             asio::error_code ec;
 
             // Cancel pending operations
@@ -121,6 +213,7 @@ namespace mcp::transport {
             // Clear buffer for security
             std::fill(buffer_.begin(), buffer_.end(), static_cast<char>(0));
             closed_ = true;
+            streaming_ = false;
         }
     }
 

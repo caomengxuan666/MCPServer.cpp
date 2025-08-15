@@ -21,6 +21,7 @@
 - [Getting Started](#getting-started)
 - [Building from Source](#building-from-source)
 - [Configuration](#configuration)
+- [Authentication](#authentication)
 - [HTTPS and Certificate Generation](#https-and-certificate-generation)
 - [Plugins](#plugins)
 - [API Reference](#api-reference)
@@ -35,6 +36,18 @@ MCPServer.cpp is a high-performance, cross-platform server implementation of the
 The server implements the JSON-RPC 2.0 protocol over HTTP transport and supports both regular request-response and Server-Sent Events (SSE) streaming for real-time communication.
 
 ## Features
+
+### MCP Primitives Support Matrix
+
+| Primitive | Status | Notes |
+|-----------|--------|-------|
+| Tools | ✅ Full Support | Execute tools in isolated plugin environment |
+| Prompts | ✅ Basic Support | Prompt templates and management |
+| Resources | ✅ Basic Support | Expose data and content to LLMs |
+| Sampling | 🚧 Planned | LLM-based sampling operations |
+| Roots | 🚧 Planned | Filesystem access control |
+
+### Core Features
 
 - Full implementation of the Model Communication Protocol (MCP)
 - JSON-RPC 2.0 over HTTP/HTTPS transport
@@ -52,6 +65,7 @@ The server implements the JSON-RPC 2.0 protocol over HTTP transport and supports
 - 📊 **Logging**: Comprehensive logging with spdlog
 - 📈 **Scalable**: Multi-threaded architecture for handling concurrent requests
 - 🌍 **Cross-platform**: Works on Windows, Linux, and macOS
+- 📁 **Resource Management**: Expose data and content to LLMs via Resources primitive
 
 ## Architecture
 
@@ -77,9 +91,9 @@ MCPServer.cpp uses a modular architecture with clear boundaries between componen
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      Core Services                          │
-│  ┌─────────────┐                                             │
-│  │   Logger    │                                             │
-│  └─────────────┘                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Logger    │  │ Resources   │  │   Configuration   │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -150,58 +164,11 @@ make -j$(nproc)
 
 ## Configuration
 
-The server uses an INI-style configuration file (`config.ini`) for runtime settings. During the build process, CMake automatically copies the example configuration file to the build directory.
+See [Configuration](#configuration) section for details on how to configure the server.
 
-### Configuration File
+## Authentication
 
-The configuration file contains settings for:
-
-- Server IP address and port
-- Logging options (level, path, file size, rotation)
-- Plugin directory location
-- Transport protocols (stdio, HTTP, HTTPS)
-
-An example configuration file (`config.ini.example`) is provided in the project root. During the build process, CMake copies this file to the build directory as `config.ini`. You can modify this file to customize the server behavior.
-
-Key configuration options include:
-
-- `ip`: Server binding IP address (default: 127.0.0.1)
-- `port`: Network port for incoming connections (default: 6666)
-- `http_port`: HTTP transport port (set to 0 to disable HTTP)
-- `https_port`: HTTPS transport port (set to 0 to disable HTTPS)
-- `log_level`: Logging severity (trace, debug, info, warn, error)
-- `log_path`: Filesystem path for log storage
-- `plugin_dir`: Directory containing plugin modules
-- `enable_stdio`: Enable stdio transport (1=enable, 0=disable)
-- `enable_http`: Enable HTTP transport (1=enable, 0=disable)
-- `enable_https`: Enable HTTPS transport (1=enable, 0=disable) - HTTPS is disabled by default for security reasons
-- `ssl_cert_file`: SSL certificate file path (required for HTTPS)
-- `ssl_key_file`: SSL private key file path (required for HTTPS)
-- `ssl_dh_params_file`: SSL Diffie-Hellman parameters file path (required for HTTPS)
-
-To customize the configuration:
-
-1. Copy `config.ini.example` to `config.ini` in the project root
-2. Modify the settings as needed
-3. Rebuild the project - CMake will copy your customized config to the build directory
-
-Example configuration:
-```ini
-[server]
-ip=0.0.0.0
-port=6666
-http_port=6666
-https_port=6667
-log_level=info
-log_path=logs/mcp_server.log
-plugin_dir=plugins
-enable_stdio=1
-enable_http=1
-enable_https=0
-ssl_cert_file=certs/server.crt
-ssl_key_file=certs/server.key
-ssl_dh_params_file=certs/dh2048.pem
-```
+MCPServer++ supports authentication mechanisms to secure your server from unauthorized access. See [AUTH.md](docs/AUTH.md) for detailed information on how to configure and use authentication.
 
 ## HTTPS and Certificate Generation
 
@@ -238,9 +205,44 @@ See [plugins/README.md](plugins/README.md) for detailed information on developin
 
 The server implements the JSON-RPC 2.0 protocol over HTTP. All requests should be sent to the `/mcp` endpoint.
 
-### Example Request
+### Resource Management
 
-``json
+MCPServer++ provides basic support for the MCP Resources primitive, which allows exposing data and content to LLMs. Resources can be accessed through the following JSON-RPC methods:
+
+- `resources/list`: List available resources
+- `resources/read`: Read the content of a specific resource
+- `resources/write`: Write content to a specific resource (if permitted)
+
+### Example Resource Request
+
+```
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "resources/read",
+  "params": {
+    "name": "example.txt"
+  }
+}
+```
+
+### Example Resource Response
+
+```
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": "This is the content of the example resource.",
+    "contentType": "text/plain",
+    "lastModified": "2025-05-13T10:00:00Z"
+  }
+}
+```
+
+### Example Tools Request (Existing)
+
+```
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -249,9 +251,9 @@ The server implements the JSON-RPC 2.0 protocol over HTTP. All requests should b
 }
 ```
 
-### Example Response
+### Example Tools Response (Existing)
 
-``json
+```
 {
   "jsonrpc": "2.0",
   "id": 1,

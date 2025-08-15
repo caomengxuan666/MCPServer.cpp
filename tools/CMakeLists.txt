@@ -8,7 +8,7 @@ target_include_directories(plugin_ctl PRIVATE ${CMAKE_SOURCE_DIR}/third_party/sp
 
 target_link_libraries(plugin_ctl PRIVATE mcp_plugin_sdk mcp_core mcp_plugin_hub)
 
-target_link_libraries(generate_cert PRIVATE MCP::OpenSSL)
+target_link_libraries(generate_cert PRIVATE MCP::OpenSSL mcp_metrics)
 
 
 # Install the tools - always install them regardless of CPACK_INCLUDE_LIBS setting

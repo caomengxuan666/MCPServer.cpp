@@ -28,6 +28,7 @@ namespace mcp::transport {
 
         asio::awaitable<void> start(HttpHandler *handler) override;
         asio::awaitable<void> write(const std::string &message) override;
+        asio::awaitable<void> stream_write(const std::string &message, bool flush = true) override;
         void close() override;
         void clear_buffer() override;
         bool is_closed() const override;

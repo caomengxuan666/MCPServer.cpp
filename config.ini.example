@@ -2,6 +2,7 @@
 ;We would copy this ini through cmake and cover the default generated one
 ;So you do not need to go to build directory to edit the ini
 ;This is a example one,you can copy it and rename it to config.ini to make it work
+;Auto-generated configuration file for MCP Server
 title=MCP Server Configuration
 [server]
 ;IP address the server binds to
@@ -27,13 +28,28 @@ enable_stdio=1
 ;Enable HTTP transport (1=enable, 0=disable)
 enable_http=1
 ;Enable HTTPS transport (1=enable, 0=disable)
-enable_https=1
+enable_https=0
+;Enable authentication (1=enable, 0=disable)
+enable_auth=0
+;Authentication type (X-API-Key, Bearer)
+auth_type=X-API-Key
+;Authentication environment file path
+auth_env_file=.env.auth
 ;SSL certificate file path (required for HTTPS)
 ssl_cert_file=certs/server.crt
 ;SSL private key file path (required for HTTPS)
 ssl_key_file=certs/server.key
 ;SSL Diffie-Hellman parameters file path (required for HTTPS)
 ssl_dh_params_file=certs/dh2048.pem
+;Rate limiter: maximum requests allowed per second
+max_requests_per_second=100
+;Rate limiter: maximum concurrent requests
+max_concurrent_requests=1000
+;Rate limiter: maximum request size in bytes
+max_request_size=1048576
+;Rate limiter: maximum response size in bytes
+max_response_size=10485760
+
 
 [plugin_hub]
 ;Base URL for plugin server

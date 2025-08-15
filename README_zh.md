@@ -21,6 +21,7 @@
 - [快速开始](#快速开始)
 - [从源码构建](#从源码构建)
 - [配置](#配置)
+- [认证](#认证)
 - [插件](#插件)
 - [API 参考](#api-参考)
 - [CI/CD 流水线](#cicd-流水线)
@@ -35,24 +36,35 @@ MCPServer.cpp 是一个使用现代 C++ 编写的高性能、跨平台的模型�
 
 ## 功能特性
 
+### MCP 原语支持矩阵
+
+| 原语 | 状态 | 说明 |
+|-----------|--------|-------|
+| Tools | ✅ 完全支持 | 在隔离的插件环境中执行工具 |
+| Prompts | ✅ 基础支持 | 提示词模板和管理 |
+| Resources | ✅ 基础支持 | 向LLM暴露数据和内容 |
+| Sampling | 🚧 计划中 | 基于LLM的采样操作 |
+| Roots | 🚧 计划中 | 文件系统访问控制 |
+
+### 核心功能
+
 - 完整实现模型通信协议（MCP）
 - 基于 HTTP/HTTPS 的 JSON-RPC 2.0 传输协议
 - 插件系统，可扩展功能
 - 内置工具（echo、文件操作、HTTP请求、系统命令）
 - 使用服务器发送事件（SSE）的流式响应
 - 全面的日志记录和错误处理
-
-
-然后在 config.ini 文件中配置服务器：
-```ini
-[server]
-https_enabled = true
-https_port = 6667
-ssl_cert_file = server.crt
-ssl_private_key_file = server.key
-```
-
-服务器将同时监听 HTTP（端口 6666）和 HTTPS（端口 6667）端点，允许客户端选择其首选的连接方式。
+- 🚀 **高性能**：基于 C++20 构建，并使用 mimalloc 进行性能优化
+- 🔌 **插件系统**：可扩展的架构，支持动态插件加载
+- 🌐 **HTTP 传输**：完整的 HTTP/1.1 支持，具备 SSE 流功能
+- 📦 **JSON-RPC 2.0**：完整实现 JSON-RPC 2.0 规范
+- 🛠️ **内置工具**：包括文件操作、HTTP 请求和系统命令
+- 🧠 **AI 模型就绪**：专为 AI 模型集成而设计
+- 🔄 **异步 I/O**：基于 ASIO 实现高效的并发处理
+- 📊 **日志记录**：使用 spdlog 实现全面的日志记录
+- 📈 **可扩展性**：多线程架构，可处理并发请求
+- 🌍 **跨平台**：支持 Windows、Linux 和 macOS
+- 📁 **资源管理**：通过 Resources 原语向 LLM 暴露数据和内容
 
 ## 架构
 
@@ -78,9 +90,9 @@ MCPServer.cpp 采用模块化架构，各组件之间界限清晰：
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      核心服务 (Core Services)               │
-│  ┌─────────────┐                                             │
-│  │   日志系统  │                                             │
-│  └─────────────┘                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   日志系统  │  │   资源      │  │    配置            │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -89,7 +101,7 @@ MCPServer.cpp 采用模块化架构，各组件之间界限清晰：
 1. **传输层**: 处理各种协议的通信（HTTP、stdio 等）
 2. **协议层**: 实现 JSON-RPC 2.0 消息解析和格式化
 3. **业务逻辑层**: 管理工具、插件和请求处理
-4. **核心服务**: 提供日志等基本服务
+4. **核心服务**: 提供日志、资源和配置等基本服务
 
 ## 快速开始
 
@@ -151,74 +163,11 @@ make -j$(nproc)
 
 ## 配置
 
-服务器使用 INI 格式的配置文件 ([config.ini](file://d:\codespace\MCPServer++\config.ini)) 进行运行时设置。在构建过程中，CMake 会自动将示例配置文件复制到构建目录。
+有关如何配置服务器的详细信息，请参见[配置](#配置)部分。
 
-### 配置文件
+## 认证
 
-配置文件包含以下设置：
-
-- 服务器 IP 地址和端口
-- 日志选项（级别、路径、文件大小、轮换）
-- 插件目录位置
-- 传输协议（stdio、HTTP、HTTPS）
-
-项目根目录中提供了示例配置文件 ([config.ini.example](file://d:\codespace\MCPServer++\config.ini.example))。在构建过程中，CMake 会将此文件复制到构建目录并命名为 [config.ini](file://d:\codespace\MCPServer++\config.ini)。您可以修改此文件来自定义服务器行为。
-
-主要配置选项包括：
-
-- `ip`：服务器绑定的 IP 地址（默认：127.0.0.1）
-- `port`：用于传入连接的网络端口（默认：6666）
-- `http_port`：HTTP 传输端口
-- `https_port`：HTTPS 传输端口 
-- `log_level`：日志严重性级别（trace, debug, info, warn, error）
-- `log_path`：日志存储的文件系统路径
-- `plugin_dir`：包含插件模块的目录
-- `enable_stdio`：启用 stdio 传输（1=启用，0=禁用）
-- `enable_http`：启用 HTTP 传输（1=启用，0=禁用）
-- `enable_https`：启用 HTTPS 传输（1=启用，0=禁用）- 出于安全原因，HTTPS 默认禁用
-- `ssl_cert_file`：SSL 证书文件路径（HTTPS 必需）
-- `ssl_key_file`：SSL 私钥文件路径（HTTPS 必需）
-- `ssl_dh_params_file`：SSL Diffie-Hellman 参数文件路径（HTTPS 必需）
-
-要自定义配置：
-
-1. 在项目根目录中将 [config.ini.example](file://d:\codespace\MCPServer++\config.ini.example) 复制为 [config.ini](file://d:\codespace\MCPServer++\config.ini)
-2. 根据需要修改设置
-3. 重新构建项目 - CMake 会将您的自定义配置复制到构建目录
-
-配置示例：
-```
-[server]
-ip=0.0.0.0
-port=6666
-http_port=6666
-https_port=6667
-log_level=info
-log_path=logs/mcp_server.log
-plugin_dir=plugins
-enable_stdio=1
-enable_http=1
-enable_https=0
-ssl_cert_file=certs/server.crt
-ssl_key_file=certs/server.key
-ssl_dh_params_file=certs/dh2048.pem
-```
-
-## HTTPS 和证书生成
-
-MCPServer++ 支持通过 HTTPS 进行安全通信。**出于安全原因，HTTPS 默认是禁用的，必须在配置文件中手动启用。**
-
-要启用 HTTPS：
-1. 在 config.ini 中设置 `enable_https=1`
-2. 确保拥有有效的 SSL 证书文件
-3. 配置所需的 SSL 文件路径
-
-有两种方法可以为 MCPServer++ 生成 SSL/TLS 证书：
-
-1. 使用内置 [generate_cert](file://d:\codespace\MCPServer++\build\bin\generate_cert.exe) 工具（推荐）
-2. 使用 OpenSSL 命令行工具
-
-有关这两种方法的详细说明，请参阅 [HTTPS 和证书生成](docs/HTTPS_AND_CERTIFICATES_zh.md) 文档。
+MCPServer++ 支持认证机制，以保护您的服务器免受未授权访问。有关如何配置和使用认证的详细信息，请参见 [AUTH_zh.md](docs/AUTH_zh.md)。
 
 ## 插件
 

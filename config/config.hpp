@@ -62,6 +62,12 @@ namespace mcp {
             bool enable_http;              // Enable HTTP transport protocol
             bool enable_https;             // Enable HTTPS transport protocol
             bool enable_auth;              // Enable authentication
+            
+            // Rate limiter configuration
+            size_t max_requests_per_second;  // Maximum requests allowed per second
+            size_t max_concurrent_requests;  // Maximum concurrent requests
+            size_t max_request_size;         // Maximum request size in bytes
+            size_t max_response_size;        // Maximum response size in bytes
 
             /**
              * Loads server configuration from INI file
@@ -93,6 +99,12 @@ namespace mcp {
                     config.port = server_section["port"].String().empty() ? 6666 : static_cast<unsigned short>(server_section["port"]);
                     config.http_port = server_section["http_port"].String().empty() ? 6666 : static_cast<unsigned short>(server_section["http_port"]);
                     config.https_port = server_section["https_port"].String().empty() ? 6667 : static_cast<unsigned short>(server_section["https_port"]);
+                    
+                    // Rate limiter values
+                    config.max_requests_per_second = server_section["max_requests_per_second"].String().empty() ? 100 : static_cast<size_t>(server_section["max_requests_per_second"]);
+                    config.max_concurrent_requests = server_section["max_concurrent_requests"].String().empty() ? 1000 : static_cast<size_t>(server_section["max_concurrent_requests"]);
+                    config.max_request_size = server_section["max_request_size"].String().empty() ? 1024 * 1024 : static_cast<size_t>(server_section["max_request_size"]);
+                    config.max_response_size = server_section["max_response_size"].String().empty() ? 10 * 1024 * 1024 : static_cast<size_t>(server_section["max_response_size"]);
 
                     // Boolean values
                     config.enable_stdio = server_section["enable_stdio"].String().empty() ? true : static_cast<bool>(server_section["enable_stdio"]);
@@ -227,6 +239,11 @@ namespace mcp {
                 ini.set("server", "ssl_cert_file", "certs/server.crt");
                 ini.set("server", "ssl_key_file", "certs/server.key");
                 ini.set("server", "ssl_dh_params_file", "certs/dh2048.pem");
+                // Rate limiter configuration
+                ini.set("server", "max_requests_per_second", 100);
+                ini.set("server", "max_concurrent_requests", 1000);
+                ini.set("server", "max_request_size", 1024 * 1024);     // 1MB
+                ini.set("server", "max_response_size", 10 * 1024 * 1024); // 10MB
 
                 // Plugin hub section configuration
                 ini.set("plugin_hub", "plugin_server_baseurl", "http://47.120.50.122");
@@ -251,9 +268,17 @@ namespace mcp {
                 ini.setComment("server", "enable_stdio", "Enable stdio transport (1=enable, 0=disable)");
                 ini.setComment("server", "enable_http", "Enable HTTP transport (1=enable, 0=disable)");
                 ini.setComment("server", "enable_https", "Enable HTTPS transport (1=enable, 0=disable)");
+                ini.setComment("server", "enable_auth", "Enable authentication (1=enable, 0=disable)");
+                ini.setComment("server", "auth_type", "Authentication type (X-API-Key, Bearer)");
+                ini.setComment("server", "auth_env_file", "Authentication environment file path");
                 ini.setComment("server", "ssl_cert_file", "SSL certificate file path (required for HTTPS)");
                 ini.setComment("server", "ssl_key_file", "SSL private key file path (required for HTTPS)");
                 ini.setComment("server", "ssl_dh_params_file", "SSL Diffie-Hellman parameters file path (required for HTTPS)");
+                // Rate limiter configuration comments
+                ini.setComment("server", "max_requests_per_second", "Rate limiter: maximum requests allowed per second");
+                ini.setComment("server", "max_concurrent_requests", "Rate limiter: maximum concurrent requests");
+                ini.setComment("server", "max_request_size", "Rate limiter: maximum request size in bytes");
+                ini.setComment("server", "max_response_size", "Rate limiter: maximum response size in bytes");
 
                 // Add comments for plugin_hub section
                 ini.setComment("plugin_hub", "plugin_server_baseurl", "Base URL for plugin server");
@@ -301,6 +326,11 @@ namespace mcp {
             MCP_DEBUG("Stdio Transport Enabled: {}", config.server.enable_stdio ? "Yes" : "No");
             MCP_DEBUG("HTTP Transport Enabled: {}", config.server.enable_http ? "Yes" : "No");
             MCP_DEBUG("HTTPS Transport Enabled: {}", config.server.enable_https ? "Yes" : "No");
+            // Rate limiter configuration
+            MCP_DEBUG("Max Requests Per Second: {}", config.server.max_requests_per_second);
+            MCP_DEBUG("Max Concurrent Requests: {}", config.server.max_concurrent_requests);
+            MCP_DEBUG("Max Request Size: {}", config.server.max_request_size);
+            MCP_DEBUG("Max Response Size: {}", config.server.max_response_size);
             MCP_DEBUG("=============================");
             MCP_DEBUG("Plugin Hub Configuration:");
             MCP_DEBUG("Plugin Server Base URL: {}", config.plugin_hub.plugin_server_baseurl);

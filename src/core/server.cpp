@@ -1,4 +1,5 @@
 #include "server.h"
+#include "Resources/resource.h"
 #include "business/plugin_manager.h"
 #include "business/tool_registry.h"
 #include "core/logger.h"
@@ -63,7 +64,8 @@ namespace mcp::core {
     std::unique_ptr<MCPserver> MCPserver::Builder::build() {
         // init core components
         server_->registry_ = std::make_shared<business::ToolRegistry>();
-        server_->plugin_manager_ = std::make_unique<business::PluginManager>();
+        server_->resource_manager_ = std::make_shared<resources::ResourceManager>();
+        server_->plugin_manager_ = std::make_shared<business::PluginManager>();
         server_->registry_->set_plugin_manager(server_->plugin_manager_);
 
         server_->request_handler_ = std::make_unique<business::RequestHandler>(
@@ -75,7 +77,7 @@ namespace mcp::core {
                     // pass session_id
                     server_ptr->dispatcher_->send_json_response(session, resp, 200);
                 });
-
+        server_->prompt_manager_ = std::make_shared<prompts::PromptManager>();
 
         MCP_TRACE("Created ToolRegistry (initial size: {})", server_->registry_->get_all_tool_names().size());
 
@@ -155,8 +157,43 @@ namespace mcp::core {
             MCP_INFO("  - '{}'", name);
         }
 
+        // Register sample resources
+        mcp::resources::Resource sample_resource;
+        sample_resource.uri = "file://localhost/resources/sample.txt";
+        sample_resource.name = "Sample Text Resource";
+        sample_resource.description = "A sample text file demonstrating the Resources primitive";
+        sample_resource.mimeType = "text/plain";
+        server_->resource_manager_->register_resource(sample_resource);
 
-        server_->dispatcher_ = std::make_unique<McpDispatcher>(server_->registry_);
+        mcp::resources::ResourceTemplate file_template;
+        file_template.uriTemplate = "file://localhost/{path}";
+        file_template.name = "File Resource";
+        file_template.description = "Template for accessing files on the server";
+        file_template.mimeType = "application/octet-stream";
+        server_->resource_manager_->register_resource_template(file_template);
+
+        server_->dispatcher_ = std::make_unique<McpDispatcher>();
+
+        // Register sample prompts
+        mcp::prompts::Prompt analyze_code_prompt;
+        analyze_code_prompt.name = "analyze-code";
+        analyze_code_prompt.description = "analyze-code";
+        mcp::prompts::PromptArgument language_arg;
+        language_arg.name = "language";
+        language_arg.description = "programming language";
+        language_arg.required = true;
+        analyze_code_prompt.arguments.push_back(language_arg);
+        server_->prompt_manager_->register_prompt(analyze_code_prompt);
+
+        mcp::prompts::Prompt git_commit_prompt;
+        git_commit_prompt.name = "git-commit";
+        git_commit_prompt.description = "generate Git commit message";
+        mcp::prompts::PromptArgument changes_arg;
+        changes_arg.name = "changes";
+        changes_arg.description = "Git diff or changes description";
+        changes_arg.required = true;
+        git_commit_prompt.arguments.push_back(changes_arg);
+        server_->prompt_manager_->register_prompt(git_commit_prompt);
 
         if (enable_http_transport_) {
             // Automatically start HTTP transport as part of the build process

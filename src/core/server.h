@@ -4,13 +4,17 @@
 #define _WIN32_WINNT 0x0601
 #endif
 
-#include "business/plugin_manager.h"
+
 #include "business/request_handler.h"
 #include "business/tool_registry.h"
-#include "mcp_dispatcher.h"
+#include "Prompts/prompt.h"
 #include "transport/http_transport.h"
 #include "transport/https_transport.h"
+#include "transport/stdio_transport.h"
+#include "business/request_handler.h"
+#include "core/mcp_dispatcher.h"
 #include "Auth/AuthManager.hpp"
+#include "Resources/resource.h"
 #include <asio/io_context.hpp>
 #include <memory>
 #include <vector>
@@ -37,12 +41,14 @@ namespace mcp::core {
                                    const std::string &cert_file, const std::string &private_key_file, const std::string &dh_params_file);
         bool start_stdio_transport();
         std::shared_ptr<business::ToolRegistry> registry_;
-        std::shared_ptr<business::PluginManager> plugin_manager_;
+        std::shared_ptr<resources::ResourceManager> resource_manager_;
+        std::shared_ptr<prompts::PromptManager> prompt_manager_; 
         std::unique_ptr<McpDispatcher> dispatcher_;
         std::unique_ptr<mcp::transport::HttpTransport> http_transport_;
         std::unique_ptr<mcp::transport::HttpsTransport> https_transport_;
         mcp::transport::StdioTransport stdio_transport_;
         std::unique_ptr<business::RequestHandler> request_handler_;
+        std::shared_ptr<business::PluginManager>plugin_manager_;
 
         // Used to record configuration
         bool should_register_echo_tool_ = false;

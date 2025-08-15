@@ -1,144 +1,324 @@
 #pragma once
 
+#if defined(_WIN32) && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0601
+#endif
+
+#include "Auth/AuthManager.hpp"
 #include "session.h"
 #include "ssl_session.h"
+#include "transport_types.h"
+#include "metrics/rate_limiter.h"
 #include <asio.hpp>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include "Auth/AuthManager.hpp"
+
+
+// Forward declarations
+namespace mcp {
+    namespace protocol {
+        struct Request;
+        struct Response;
+    }// namespace protocol
+    namespace metrics{
+        class MetricsManager;
+        class RateLimiter;
+    }
+}// namespace mcp
+
 namespace mcp::transport {
 
-    // Forward declaration
+    // Forward declarations
     class Session;
     class SslSession;
 
+    /**
+     * @brief HTTP request structure for parsing incoming requests.
+     */
+    struct HttpRequest {
+        std::string method;                                  ///< HTTP method (GET, POST, etc.)
+        std::string target;                                  ///< Request target/URL
+        std::string version;                                 ///< HTTP version
+        std::unordered_map<std::string, std::string> headers;///< HTTP headers
+        std::string body;                                    ///< Request body
+    };
+
+    /**
+     * @brief Handles HTTP requests and responses for transport layers.
+     * Provides common functionality for both regular and SSL sessions.
+     */
     class HttpHandler {
     public:
-        // Define HTTP request structure
-        struct HttpRequest {
-            std::string method;                                  // Request method (GET/POST/etc)
-            std::string target;                                  // Request path
-            std::string version;                                 // HTTP version
-            std::unordered_map<std::string, std::string> headers;// Header key-value pairs
-            std::string body;                                    // Request body
-        };
+        /**
+         * @brief Construct HTTP handler with message callback.
+         * @param on_message Callback for processing complete messages
+         */
+        explicit HttpHandler(MessageCallback on_message, std::shared_ptr<AuthManagerBase> auth_manager = nullptr);
 
-        // Message callback function type
-        using MessageCallback = std::function<void(
-                const std::string &json_message,
-                std::shared_ptr<Session> session,
-                const std::string &session_id)>;
+        /**
+         * @brief Set callback to be called before handling a request.
+         * @param callback Function to call before request handling
+         */
+        void set_before_request_callback(std::function<void(const HttpRequest &, const std::string &)> callback);
 
-        // AOP callback function types
-        using BeforeRequestCallback = std::function<void(
-                const HttpRequest &request,
-                const std::string &session_id)>;
+        /**
+         * @brief Set callback to be called after handling a request.
+         * @param callback Function to call after request handling
+         */
+        void set_after_request_callback(std::function<void(const HttpRequest &, const std::string &, int, const std::string &)> callback);
 
-        using AfterRequestCallback = std::function<void(
-                const HttpRequest &request,
-                const std::string &response,
-                int status_code,
-                const std::string &session_id)>;
+        /**
+         * @brief Set callback to be called when an error occurs.
+         * @param callback Function to call on error
+         */
+        void set_on_error_callback(std::function<void(const std::string &, const std::string &)> callback);
 
-        using OnErrorCallback = std::function<void(
-                const std::string &error_message,
-                const std::string &session_id)>;
+        /**
+         * @brief Process an HTTP request from a regular session.
+         * @param session Active session
+         * @param raw_request Raw HTTP request string
+         */
+        asio::awaitable<void> handle_request(std::shared_ptr<Session> session, const std::string &raw_request);
 
-        // Constructor
-        explicit HttpHandler(
-                MessageCallback on_message,
-                std::shared_ptr<AuthManagerBase> auth_manager = nullptr)
-            : on_message_(std::move(on_message)), auth_manager_(std::move(auth_manager)) {}
+        /**
+         * @brief Process an HTTP request from an SSL session.
+         * @param session Active SSL session
+         * @param raw_request Raw HTTP request string
+         */
+        asio::awaitable<void> handle_request(std::shared_ptr<SslSession> session, const std::string &raw_request);
 
-        // AOP callback setters
-        void set_before_request_callback(BeforeRequestCallback callback) {
-            before_request_callback_ = std::move(callback);
-        }
+        /**
+         * @brief Send an HTTP response to a regular session.
+         * @param session Active session
+         * @param body Response body
+         * @param status_code HTTP status code
+         */
+        asio::awaitable<void> send_http_response(std::shared_ptr<Session> session, const std::string &body, int status_code = 200);
 
-        void set_after_request_callback(AfterRequestCallback callback) {
-            after_request_callback_ = std::move(callback);
-        }
+        /**
+         * @brief Send an HTTP response to an SSL session.
+         * @param session Active SSL session
+         * @param body Response body
+         * @param status_code HTTP status code
+         */
+        asio::awaitable<void> send_http_response(std::shared_ptr<SslSession> session, const std::string &body, int status_code = 200);
 
-        void set_on_error_callback(OnErrorCallback callback) {
-            on_error_callback_ = std::move(callback);
-        }
+        /**
+         * @brief Send a chunk of streaming data to a regular session.
+         * @param session Active session
+         * @param data Data chunk to send
+         */
+        asio::awaitable<void> send_chunk(std::shared_ptr<Session> session, const std::string &data);
 
-        // Parse HTTP request
-        std::optional<HttpRequest> parse_request(const std::string &raw_request);
+        /**
+         * @brief Send a chunk of streaming data to an SSL session.
+         * @param session Active SSL session
+         * @param data Data chunk to send
+         */
+        asio::awaitable<void> send_chunk(std::shared_ptr<SslSession> session, const std::string &data);
 
-        // Main request handling logic
-        asio::awaitable<void> handle_request(
-                std::shared_ptr<Session> session,
-                const std::string &raw_request);
+        /**
+         * @brief Send the final chunk to end streaming to a regular session.
+         * @param session Active session
+         */
+        asio::awaitable<void> send_chunk_end(std::shared_ptr<Session> session);
 
-        // Main request handling logic for SSL sessions
-        asio::awaitable<void> handle_request(
-                std::shared_ptr<SslSession> session,
-                const std::string &raw_request);
+        /**
+         * @brief Send the final chunk to end streaming to an SSL session.
+         * @param session Active SSL session
+         */
+        asio::awaitable<void> send_chunk_end(std::shared_ptr<SslSession> session);
 
-        // Send HTTP response
-        asio::awaitable<void> send_http_response(
-                std::shared_ptr<Session> session,
-                const std::string &body,
-                int status_code);
+        /**
+         * @brief Start a streaming response for a regular session.
+         * @param session Active session
+         * @param content_type Content type for the response
+         */
+        asio::awaitable<void> start_streaming_response(std::shared_ptr<Session> session, const std::string &content_type = "application/json");
 
-        // Send HTTPS response
-        asio::awaitable<void> send_http_response(
-                std::shared_ptr<SslSession> session,
-                const std::string &body,
-                int status_code);
+        /**
+         * @brief Start a streaming response for an SSL session.
+         * @param session Active SSL session
+         * @param content_type Content type for the response
+         */
+        asio::awaitable<void> start_streaming_response(std::shared_ptr<SslSession> session, const std::string &content_type = "application/json");
 
+        /**
+         * @brief Send a chunk of streaming data to a regular session.
+         * @param session Active session
+         * @param chunk Data chunk to send
+         */
+        asio::awaitable<void> send_streaming_chunk(std::shared_ptr<Session> session, const std::string &chunk);
 
-        // Get value from headers map (handling unordered_map type headers)
-        static std::string get_header_value(
-                const std::unordered_map<std::string, std::string> &headers,
-                const std::string &key);
+        /**
+         * @brief Send a chunk of streaming data to an SSL session.
+         * @param session Active SSL session
+         * @param chunk Data chunk to send
+         */
+        asio::awaitable<void> send_streaming_chunk(std::shared_ptr<SslSession> session, const std::string &chunk);
 
-        // Get value from raw headers string (compatibility with old logic)
-        static std::string get_header_value(
-                const std::string &headers_str,
-                const std::string &key);
+        /**
+         * @brief End a streaming response for a regular session.
+         * @param session Active session
+         */
+        asio::awaitable<void> end_streaming_response(std::shared_ptr<Session> session);
+
+        /**
+         * @brief End a streaming response for an SSL session.
+         * @param session Active SSL session
+         */
+        asio::awaitable<void> end_streaming_response(std::shared_ptr<SslSession> session);
 
     private:
-        MessageCallback on_message_;                   // Message callback function
-        BeforeRequestCallback before_request_callback_;// AOP: Before request callback
-        AfterRequestCallback after_request_callback_;  // AOP: After request callback
-        OnErrorCallback on_error_callback_;            // AOP: Error callback
+        MessageCallback on_message_;
         std::shared_ptr<AuthManagerBase> auth_manager_;
+        std::shared_ptr<mcp::metrics::MetricsManager> metrics_manager_;
+        std::shared_ptr<mcp::metrics::RateLimiter> rate_limiter_;
 
-        // Template function to handle common logic for both Session and SslSession
-        template<typename SessionType>
-        asio::awaitable<void> handle_request_impl(
-                std::shared_ptr<SessionType> session,
-                const std::string &raw_request);
+        std::function<void(const HttpRequest &, const std::string &)> before_request_callback_;
+        std::function<void(const HttpRequest &, const std::string &, int, const std::string &)> after_request_callback_;
+        std::function<void(const std::string &, const std::string &)> on_error_callback_;
 
+        /**
+         * @brief Apply flow control policies to an incoming request.
+         * @param session Active session
+         * @param req HTTP request structure
+         * @return true if the request conforms to flow control policies, false otherwise
+         */
+        bool apply_flow_control(std::shared_ptr<Session> session, const HttpRequest &req);
+
+        /**
+         * @brief Apply flow control policies to an incoming SSL request.
+         * @param session Active SSL session
+         * @param req HTTP request structure
+         * @return true if the request conforms to flow control policies, false otherwise
+         */
+        bool apply_flow_control(std::shared_ptr<SslSession> session, const HttpRequest &req);
+
+        /**
+         * @brief Parse raw HTTP request into structured data.
+         * @param raw_request Raw HTTP request string
+         * @return Optional HttpRequest structure
+         */
+        std::optional<HttpRequest> parse_request(const std::string &raw_request);
+
+        /**
+         * @brief Get header value from headers map (case-insensitive).
+         * @param headers Headers map
+         * @param key Header key to find
+         * @return Header value or empty string
+         */
+        static std::string get_header_value(const std::unordered_map<std::string, std::string> &headers, const std::string &key);
+
+        /**
+         * @brief Get header value from raw headers string (case-insensitive).
+         * @param headers_str Raw headers string
+         * @param key Header key to find
+         * @return Header value or empty string
+         */
+        static std::string get_header_value(const std::string &headers_str, const std::string &key);
+
+        /**
+         * @brief Discard existing buffer data for a regular session.
+         * @param session Active session
+         */
         asio::awaitable<void> discard_existing_buffer(std::shared_ptr<Session> session);
+
+        /**
+         * @brief Discard existing buffer data for an SSL session.
+         * @param session Active SSL session
+         */
         asio::awaitable<void> discard_existing_buffer(std::shared_ptr<SslSession> session);
 
-        // Template function to send HTTP response for both Session and SslSession
+        /**
+         * @brief Discard remaining request body data for a regular session.
+         * @param session Active session
+         * @param req HTTP request structure
+         * @param already_read Number of bytes already read
+         */
+        asio::awaitable<void> discard_remaining_request_body(std::shared_ptr<Session> session, const HttpRequest &req, size_t already_read);
+
+        /**
+         * @brief Discard remaining request body data for an SSL session.
+         * @param session Active SSL session
+         * @param req HTTP request structure
+         * @param already_read Number of bytes already read
+         */
+        asio::awaitable<void> discard_remaining_request_body(std::shared_ptr<SslSession> session, const HttpRequest &req, size_t already_read);
+
+        /**
+         * @brief Send HTTP response implementation (template method).
+         * @param session Active session
+         * @param body Response body
+         * @param status_code HTTP status code
+         * @param is_chunked Whether to use chunked transfer encoding
+         */
         template<typename SessionType>
-        asio::awaitable<void> send_http_response_impl(
-                std::shared_ptr<SessionType> session,
-                const std::string &body,
-                int status_code);
+        asio::awaitable<void> send_http_response_impl(std::shared_ptr<SessionType> session, const std::string &body, int status_code, bool is_chunked = false);
 
-        // Fully read and discard remaining request body
-        asio::awaitable<void> discard_remaining_request_body(
-                std::shared_ptr<Session> session,
-                const HttpRequest &req,
-                size_t already_read);
+        /**
+         * @brief Handle request implementation (template method).
+         * @param session Active session
+         * @param raw_request Raw HTTP request string
+         */
+        template<typename SessionType>
+        asio::awaitable<void> handle_request_impl(std::shared_ptr<SessionType> session, const std::string &raw_request);
 
-        // Fully read and discard remaining request body for SSL sessions
-        asio::awaitable<void> discard_remaining_request_body(
-                std::shared_ptr<SslSession> session,
-                const HttpRequest &req,
-                size_t already_read);
+        /**
+         * @brief Set the maximum allowed request size.
+         * @param size Maximum request size in bytes
+         */
+        void set_max_request_size(size_t size);
 
-        // Case-insensitive string comparison (internal helper function)
+        /**
+         * @brief Set the maximum number of requests allowed per second.
+         * @param count Maximum requests per second
+         */
+        void set_max_requests_per_second(size_t count);
+
+        /**
+         * @brief Start a streaming response implementation (template method).
+         * @param session Active session
+         * @param content_type Content type for the response
+         */
+        template<typename SessionType>
+        asio::awaitable<void> start_streaming_response_impl(std::shared_ptr<SessionType> session, const std::string &content_type);
+
+        /**
+         * @brief Send a streaming chunk implementation (template method).
+         * @param session Active session
+         * @param chunk Data chunk to send
+         */
+        template<typename SessionType>
+        asio::awaitable<void> send_streaming_chunk_impl(std::shared_ptr<SessionType> session, const std::string &chunk);
+
+        /**
+         * @brief End a streaming response implementation (template method).
+         * @param session Active session
+         */
+        template<typename SessionType>
+        asio::awaitable<void> end_streaming_response_impl(std::shared_ptr<SessionType> session);
+
+        /**
+         * @brief Case-insensitive string comparison.
+         * @param s1 First string
+         * @param s2 Second string
+         * @return Comparison result
+         */
         static int strcasecmp(const char *s1, const char *s2);
+
+        /**
+         * @brief Send SSE event to client.
+         * @param session Active session
+         * @param event_type Event type
+         * @param event_id Event ID
+         * @param data Event data
+         */
+        template<typename SessionType>
+        asio::awaitable<void> send_sse_event(std::shared_ptr<SessionType> session, const std::string &event_type, int event_id, const std::string &data);
     };
 
 }// namespace mcp::transport

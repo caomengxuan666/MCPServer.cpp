@@ -36,6 +36,17 @@ namespace mcp::transport {
         virtual asio::awaitable<void> write(const std::string &message) = 0;
 
         /**
+         * @brief Send data to the client in a streaming fashion.
+         * @param message The message to send
+         * @param flush Whether to flush the data immediately
+         */
+        virtual asio::awaitable<void> stream_write(const std::string &message, bool flush = true) {
+            // Default implementation just calls regular write
+            co_await write(message);
+            co_return;
+        }
+
+        /**
          * @brief Close the session.
          */
         virtual void close() = 0;
@@ -49,6 +60,18 @@ namespace mcp::transport {
          * @brief Check if the session is closed.
          */
         virtual bool is_closed() const = 0;
+
+        /**
+         * @brief Set streaming state.
+         * @param streaming Whether the session is in streaming mode
+         */
+        void set_streaming(bool streaming) { is_streaming_ = streaming; }
+
+        /**
+         * @brief Check if the session is in streaming mode.
+         * @return True if the session is in streaming mode
+         */
+        bool is_streaming() const { return is_streaming_; }
 
         /**
          * @brief Get the underlying socket (implemented by subclasses).
@@ -73,9 +96,10 @@ namespace mcp::transport {
 
         std::string session_id_;                              ///< Unique session identifier
         std::array<char, 8192> buffer_;                       ///< Buffer for reading data
-        bool closed_ = false;                                 ///< Flag indicating if session is closed
-        std::string accept_header_;                           ///< Accepted content type header
-        std::unordered_map<std::string, std::string> headers_;///< Request headers
+        std::unordered_map<std::string, std::string> headers_;///< HTTP headers
+        std::string accept_header_;                           ///< Accept header value
+        bool is_streaming_ = false;
+        bool closed_ = false;
     };
 
 }// namespace mcp::transport

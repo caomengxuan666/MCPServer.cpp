@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.4.1)
+project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.5.0)
 
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_VISIBILITY_PRESET default)
@@ -61,6 +61,7 @@ target_include_directories(mcp-server++ PRIVATE
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/asio/asio/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/metrics/include)
 
 if(WIN32)
     add_compile_definitions(_WIN32_WINDOWS)
@@ -78,11 +79,18 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Add subdirectories
-add_subdirectory(src)
+add_subdirectory(src/core)
+add_subdirectory(src/protocol)
+add_subdirectory(src/transport)
+add_subdirectory(src/business)
+add_subdirectory(src/metrics)
 add_subdirectory(plugins)
 add_subdirectory(tools)
 add_subdirectory(third_party/miniz)
 add_subdirectory(utils)
+add_subdirectory(src/Resources)
+add_subdirectory(src/routers)
+add_subdirectory(src/Prompts)
 
 # turn off mimalloc tests and examples
 set(MI_BUILD_TESTS OFF CACHE BOOL "Build mimalloc tests" FORCE)
@@ -102,9 +110,11 @@ if(UNIX)
         mcp_plugin_sdk
         mcp_plugin_hub
         mcp_utils
+        mcp_metrics
     )
 else()
     target_link_libraries(mcp-server++ PRIVATE
+        mcp_metrics
         mcp_business
         mcp_core
         mcp_transport

@@ -14,6 +14,11 @@ namespace mcp::transport {
 
         asio::awaitable<void> start(HttpHandler *handler) override;
         asio::awaitable<void> write(const std::string &message) override;
+        asio::awaitable<void> stream_write(const std::string &message, bool flush = true) override;
+        
+        asio::awaitable<void> write_chunk(const std::string &chunk);
+        asio::awaitable<void> start_streaming(const std::string &content_type = "application/json");
+        
         void close() override;
         void clear_buffer() override;
         bool is_closed() const override;
@@ -23,6 +28,7 @@ namespace mcp::transport {
 
     private:
         asio::ip::tcp::socket socket_;///< Underlying TCP socket
+        bool streaming_ = false;      ///< Flag indicating if session is in streaming mode
     };
 
 }// namespace mcp::transport
