@@ -24,9 +24,6 @@
  * THE SOFTWARE.
  *
  **************************************************************************/
-
-
-
 typedef unsigned char mz_validate_uint16[sizeof(mz_uint16) == 2 ? 1 : -1];
 typedef unsigned char mz_validate_uint32[sizeof(mz_uint32) == 4 ? 1 : -1];
 typedef unsigned char mz_validate_uint64[sizeof(mz_uint64) == 8 ? 1 : -1];
@@ -3179,6 +3176,35 @@ static int mz_stat64(const char *path, struct __stat64 *buffer)
 #define MZ_FILE_STAT stat
 #define MZ_FFLUSH fflush
 #define MZ_FREOPEN(p, m, s) freopen(p, m, s)
+#define MZ_DELETE_FILE remove
+
+#if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE
+#endif
+#ifndef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 64
+#endif
+#endif
+
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+/* Linux with large file support via _FILE_OFFSET_BITS=64 */
+#ifndef MINIZ_NO_TIME
+#include <utime.h>
+#endif
+#include <sys/stat.h>
+#include <stdio.h>
+
+#define MZ_FOPEN(f, m) fopen(f, m)
+#define MZ_FCLOSE fclose
+#define MZ_FREAD fread
+#define MZ_FWRITE fwrite
+#define MZ_FTELL64 ftello
+#define MZ_FSEEK64 fseeko
+#define MZ_FILE_STAT_STRUCT stat
+#define MZ_FILE_STAT stat
+#define MZ_FFLUSH fflush
+#define MZ_FREOPEN(f, m, s) freopen(f, m, s)
 #define MZ_DELETE_FILE remove
 
 #else

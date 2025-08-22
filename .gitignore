@@ -12,3 +12,4 @@ mcp-server.log
 checks.json
 /certs
 *.exe
+checks.json

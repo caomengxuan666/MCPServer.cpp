@@ -663,20 +663,17 @@ namespace mcp::transport {
     }
 
     // Helper function: fully read and discard remaining request body (avoid buffer residue)
-    asio::awaitable<void> HttpHandler::discard_remaining_request_body(
-            std::shared_ptr<Session> session,
-            const HttpRequest &req,
-            size_t already_read) {// Note parameter name changed to "total bytes read"
+    asio::awaitable<void> HttpHandler::discard_remaining_request_body(std::shared_ptr<Session> session, const HttpRequest &request, [[maybe_unused]] size_t already_read) {
         try {
-            auto it = req.headers.find("Content-Length");
-            if (it == req.headers.end()) {
+            auto it = request.headers.find("Content-Length");
+            if (it == request.headers.end()) {
                 co_return;
             }
 
             size_t content_len = std::stoull(it->second);
 
             // Calculate already read body length
-            size_t already_read_body = req.body.size();
+            size_t already_read_body = request.body.size();
 
             // Key: add underflow protection to avoid negative numbers (unsigned underflow)
             if (already_read_body >= content_len) {
@@ -705,20 +702,17 @@ namespace mcp::transport {
     }
 
     // Helper function: fully read and discard remaining request body for SSL sessions (avoid buffer residue)
-    asio::awaitable<void> HttpHandler::discard_remaining_request_body(
-            std::shared_ptr<SslSession> session,
-            const HttpRequest &req,
-            size_t already_read) {// Note parameter name changed to "total bytes read"
+    asio::awaitable<void> HttpHandler::discard_remaining_request_body(std::shared_ptr<SslSession> session, const HttpRequest &request, [[maybe_unused]] size_t already_read) {
         try {
-            auto it = req.headers.find("Content-Length");
-            if (it == req.headers.end()) {
+            auto it = request.headers.find("Content-Length");
+            if (it == request.headers.end()) {
                 co_return;
             }
 
             size_t content_len = std::stoull(it->second);
 
             // Calculate already read body length
-            size_t already_read_body = req.body.size();
+            size_t already_read_body = request.body.size();
 
             // Key: add underflow protection to avoid negative numbers (unsigned underflow)
             if (already_read_body >= content_len) {

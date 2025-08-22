@@ -188,7 +188,7 @@ namespace mcp::transport {
      * @param message Data to send to client
      * @param flush Whether to flush the data immediately
      */
-    asio::awaitable<void> SslSession::stream_write(const std::string &message, bool flush) {
+    asio::awaitable<void> SslSession::stream_write(const std::string &message, [[maybe_unused]] bool flush) {
         if (closed_ || !ssl_stream_.lowest_layer().is_open()) {
             MCP_DEBUG("Attempted stream write to closed SSL session (ID: {})", session_id_);
             co_return;

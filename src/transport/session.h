@@ -40,7 +40,7 @@ namespace mcp::transport {
          * @param message The message to send
          * @param flush Whether to flush the data immediately
          */
-        virtual asio::awaitable<void> stream_write(const std::string &message, bool flush = true) {
+        virtual asio::awaitable<void> stream_write(const std::string &message, [[maybe_unused]] bool flush = true) {
             // Default implementation just calls regular write
             co_await write(message);
             co_return;

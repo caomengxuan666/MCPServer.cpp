@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.22)
 project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.5.0)
 
 if(UNIX AND NOT APPLE)
@@ -66,6 +66,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/metrics/include)
 if(WIN32)
     add_compile_definitions(_WIN32_WINDOWS)
 endif()
+
+add_compile_definitions(OPENSSL_API_COMPAT=30000)
 
 # link mimalloc
 # target_link_libraries(mcp-server++ PRIVATE ${LINKED_LIBRARIES})
@@ -201,6 +203,9 @@ endif()
 # CPack support for packaging
 include(cmake/CPackConfig.cmake)
 
+# CPack RPM spec file
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+
 # testing
 # Only build tests when including libs
 if(CPACK_INCLUDE_LIBS)
@@ -226,3 +231,7 @@ endif()
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+set_target_properties(generate_cert PROPERTIES
+    COMPILE_DEFINITIONS "OPENSSL_SUPPRESS_DEPRECATED"
+)

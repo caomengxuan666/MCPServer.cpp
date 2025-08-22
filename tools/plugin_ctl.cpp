@@ -4,7 +4,6 @@
  * @Description: MCP Plugin CLI Tool (plugin_ctl) - Refactored version
  *               Following CommandLineConfig best practices
  */
-#pragma once
 #include "args.hxx"
 #include "config/config.hpp"
 #include "core/logger.h"
