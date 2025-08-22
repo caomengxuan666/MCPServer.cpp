@@ -25,6 +25,7 @@
 - [HTTPS and Certificate Generation](#https-and-certificate-generation)
 - [Plugins](#plugins)
 - [API Reference](#api-reference)
+- [Docker Deployment](#docker-deployment)
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -274,6 +275,41 @@ MCPServer++ provides basic support for the MCP Resources primitive, which allows
     }
   ]
 }
+```
+
+## Docker Deployment
+
+### Build and Run
+1. **Multi-stage build** (Image size optimized to 10-15MB)
+   ```bash
+   docker build -t mcp-server .
+   docker run -p 6666:6666 -v $(pwd)/plugins:/plugins -v $(pwd)/certs:/certs mcp-server
+   ```
+
+2. **HTTPS Configuration** (Certificate directory mounting required)
+   ```bash
+   # Enable HTTPS by setting enable_https=1 in config.ini
+   # Certificate files must be placed in /certs directory inside container
+   docker run -p 6667:6667 -v $(pwd)/certs:/certs mcp-server
+   ```
+
+### Plugin System
+- **Plugin Path Mapping**: Container plugin directory is `/plugins`, recommend mapping local directory via volume
+- **Plugin Loading**: Supports runtime hot-loading (ensure correct file permissions)
+
+### Image Optimization
+- Based on minimal `gcr.io/distroless/cc-debian12` base image
+- Static linking + debug info stripping (LTO optimized)
+- Domestic users can configure mirror accelerators (see configuration examples)
+
+## Docker Hub
+
+Pre-built Docker images are available on Docker Hub: [https://hub.docker.com/r/mgzy/mcp-server](https://hub.docker.com/r/mgzy/mcp-server)
+
+You can pull and run the latest image directly:
+```bash
+docker pull mgzy/mcp-server
+docker run -p 6666:6666 -v $(pwd)/plugins:/plugins -v $(pwd)/certs:/certs mgzy/mcp-server
 ```
 
 ## CI/CD Pipeline
