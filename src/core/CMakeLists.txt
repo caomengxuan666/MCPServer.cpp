@@ -6,6 +6,8 @@ add_library(mcp_core ${CORE_SOURCES})
 
 target_include_directories(mcp_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../src>
     $<INSTALL_INTERFACE:include/mcp/core>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/spdlog/include>
