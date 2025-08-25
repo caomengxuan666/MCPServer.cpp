@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.5.0)
+project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.6.0)
 
 # Add option for Python support
 option(ENABLE_PYTHON_PLUGINS "Enable Python plugin support" ON)
@@ -98,20 +98,8 @@ add_subdirectory(src/Resources)
 add_subdirectory(src/routers)
 add_subdirectory(src/Prompts)
 
-# Conditionally add Python support
-if(ENABLE_PYTHON_PLUGINS)
-    find_package(Python COMPONENTS Interpreter Development)
-    if(Python_FOUND)
-        message(STATUS "Python found: ${Python_VERSION}")
-        message(STATUS "Python executable: ${Python_EXECUTABLE}")
-        message(STATUS "Python include dirs: ${Python_INCLUDE_DIRS}")
-        message(STATUS "Python libraries: ${Python_LIBRARIES}")
-    else()
-        message(WARNING "Python not found. Disabling Python plugin support.")
-        set(ENABLE_PYTHON_PLUGINS OFF)
-    endif()
-endif()
-
+include(cmake/EnablePython.cmake)
+enable_python()
 # turn off mimalloc tests and examples
 set(MI_BUILD_TESTS OFF CACHE BOOL "Build mimalloc tests" FORCE)
 set(MI_BUILD_EXAMPLES OFF CACHE BOOL "Build mimalloc examples" FORCE)

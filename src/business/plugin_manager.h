@@ -39,6 +39,8 @@ namespace mcp::business {
             get_tools_func get_tools;
             call_tool_func call_tool;
             free_result_func free_result;
+            initialize_plugin_func initialize_plugin;
+            uninitialize_plugin_func uninitialize_plugin;  // 新增 uninitialize_plugin 函数指针
             std::vector<ToolInfo> tool_list;
             get_stream_next_func get_stream_next;
             get_stream_free_func get_stream_free;

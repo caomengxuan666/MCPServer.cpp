@@ -125,3 +125,121 @@ function(configure_plugin plugin_name src_files)
         endif()
     endif()
 endfunction()
+
+# Common function to configure a Python plugin
+# args:
+# plugin_name - Name of the plugin
+# python_module - Path to the Python module file (.py)
+function(configure_python_plugin plugin_name python_module)
+    # Find required packages
+    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+    # Add the plugin library using the pybind wrapper
+    add_library(${plugin_name} SHARED
+        ${PROJECT_SOURCE_DIR}/plugins/sdk/pybind_module_plugin.cpp
+    )
+
+    # Include directories
+    target_include_directories(${plugin_name} PRIVATE
+        # MCPServer++ include directories
+        ${PROJECT_SOURCE_DIR}/plugins/sdk
+        ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/third_party/nlohmann
+        ${PROJECT_SOURCE_DIR}/third_party/pybind11/include
+        ${PROJECT_SOURCE_DIR}/src
+    )
+
+    # Add preprocessor definition for DLL export
+    target_compile_definitions(${plugin_name} PRIVATE MCPSERVER_API_EXPORTS PYBIND11_EXPORT_OVERRIDE)
+
+    # Link libraries
+    target_link_libraries(${plugin_name} PRIVATE 
+        pybind11::embed
+        mcp_business
+    )
+
+    # Set output directory for plugins to bin/plugins
+    set_target_properties(${plugin_name} PROPERTIES
+        PREFIX ""
+        RUNTIME_OUTPUT_DIRECTORY ${PLUGINS_OUTPUT_DIR}
+        LIBRARY_OUTPUT_DIRECTORY ${PLUGINS_OUTPUT_DIR}
+    )
+
+    if(WIN32)
+        set_target_properties(${plugin_name} PROPERTIES SUFFIX ".dll")
+    else()
+        set_target_properties(${plugin_name} PROPERTIES SUFFIX ".so")
+    endif()
+
+    # Install the plugin to bin/plugins (always install plugins)
+    install(TARGETS ${plugin_name}
+        RUNTIME DESTINATION bin/plugins
+        LIBRARY DESTINATION bin/plugins
+    )
+
+    # Copy the Python module file to the output directory after build
+    add_custom_command(TARGET ${plugin_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${python_module}
+        $<TARGET_FILE_DIR:${plugin_name}>
+    )
+
+    # Copy the SDK file to the output directory after build if it exists
+    set(sdk_file "${PROJECT_SOURCE_DIR}/plugins/sdk/mcp_sdk.py")
+    if(EXISTS ${sdk_file})
+        add_custom_command(TARGET ${plugin_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${sdk_file}
+            $<TARGET_FILE_DIR:${plugin_name}>
+        )
+    endif()
+
+    # Install the Python module file
+    install(FILES ${python_module}
+        DESTINATION bin/plugins
+    )
+
+    # Install the SDK file if it exists
+    if(EXISTS ${sdk_file})
+        install(FILES ${sdk_file}
+            DESTINATION bin/plugins
+        )
+    endif()
+
+    # automatically generate tools.json - always do this for runtime configs
+    set(json_source_file "${CMAKE_CURRENT_SOURCE_DIR}/tools.json")
+    set(json_target_file "${plugin_name}_tools.json")
+
+    if(EXISTS ${json_source_file})
+        # Create configs directory if not exists
+        file(MAKE_DIRECTORY ${CONFIGS_OUTPUT_DIR})
+
+        configure_file(
+            ${json_source_file}
+            ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+            COPYONLY
+        )
+
+        # build when the plugin is built
+        add_custom_command(
+            OUTPUT ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${json_source_file}
+            ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+            DEPENDS ${json_source_file}
+            COMMENT "Copying ${plugin_name} tools.json file to configs directory"
+        )
+
+        add_custom_target(${plugin_name}_json ALL
+            DEPENDS ${CONFIGS_OUTPUT_DIR}/${json_target_file}
+        )
+
+        add_dependencies(${plugin_name} ${plugin_name}_json)
+
+        # Install configs to bin/configs (always install configs)
+        install(FILES ${json_source_file}
+            DESTINATION bin/configs
+            RENAME ${json_target_file}
+        )
+    endif()
+endfunction()

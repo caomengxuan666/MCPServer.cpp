@@ -197,6 +197,30 @@ MCPServer.cpp supports a powerful plugin system that allows extending functional
 - `safe_system_plugin`: Secure system command execution
 - `example_stream_plugin`: Streaming data example
 
+### Python Plugins
+
+MCPServer++ now supports Python plugins through a new Python SDK that makes plugin development more intuitive. Python plugins are compiled to dynamic libraries (DLL/SO) that wrap Python code using pybind11.
+
+#### Creating Python Plugins
+
+To create a new Python plugin, use the `plugin_ctl` tool:
+
+```bash
+./plugin_ctl create -p my_python_plugin
+```
+
+This will generate a Python plugin template that uses the new Python SDK with decorators and helper functions.
+
+#### Python Plugin Features
+
+- Decorator-based tool definition with `@tool`
+- Automatic JSON handling
+- Streaming tool support
+- Parameter validation helpers
+- Easy integration with the MCP protocol
+
+For detailed information about Python plugin development, see [Python Plugins Documentation](docs/PYTHON_PLUGINS.md).
+
 ### Plugin Development
 
 See [plugins/README.md](plugins/README.md) for detailed information on developing custom plugins.
