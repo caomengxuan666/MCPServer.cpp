@@ -139,7 +139,7 @@ namespace mcp::transport {
                 size_t chunk_size = std::min(max_chunk_size, message.size() - total_bytes_written);
                 std::string chunk = message.substr(total_bytes_written, chunk_size);
                 
-                asio::error_code ec;
+                //asio::error_code ec;
                 size_t bytes_written = co_await asio::async_write(ssl_stream_, asio::buffer(chunk), asio::redirect_error(asio::use_awaitable, ec));
                 
                 if (ec) {

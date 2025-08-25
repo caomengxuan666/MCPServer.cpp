@@ -6,6 +6,11 @@
 #include "metrics/rate_limiter.h"
 #include "metrics/performance_metrics.h"
 #include "utils/auth_utils.h"
+#include <csignal>
+#include <asio/io_context.hpp>
+#include <asio/signal_set.hpp>
+#include <cstdlib>
+#include <thread>
 
 
 /**
@@ -130,6 +135,22 @@ int main() {
                               .with_auth_manager(auth_manager)                                                    // Set authentication manager
                               .build();                                                                           // Construct the server instance
 
+        // Setup signal handler for graceful shutdown
+        asio::io_context io_context;
+        asio::signal_set signals(io_context, SIGINT, SIGTERM);
+        
+        signals.async_wait([&](const asio::error_code& error, int signal_number) {
+            if (!error) {
+                MCP_INFO("Received signal {}, initiating graceful shutdown...", signal_number);
+                std::quick_exit(0);
+            }
+        });
+        
+        // Run the signal handler in a separate thread
+        std::thread signal_thread([&io_context]() {
+            io_context.run();
+        });
+
         // Notify that the server is ready to accept connections.
         MCP_INFO("MCPServer.cpp is ready.");
         MCP_INFO("Send JSON-RPC messages via /mcp.");
@@ -138,6 +159,13 @@ int main() {
         // This call is expected to block until the server is stopped.
         server->run();
 
+        // Stop the signal handler and wait for the thread to finish
+        io_context.stop();
+        if (signal_thread.joinable()) {
+            signal_thread.join();
+        }
+
+        MCP_INFO("Server shutdown complete.");
         return 0;// Normal exit
 
     } catch (const std::exception &e) {

@@ -1,6 +1,5 @@
 #include "python_plugin_instance.h"
 #include "python_runtime_manager.h"
-#include <iostream>
 #include <filesystem>
 #include <cstring>
 #include "core/logger.h"
@@ -104,10 +103,9 @@ bool PythonPluginInstance::initialize_plugin_module() {
         
         MCP_INFO("[PLUGIN] Plugin module loaded successfully");
         return true;
-    } catch (const py::error_already_set& e) {
+    } catch (const py::error_already_set& ) {
         // Print detailed Python exception (including stack trace) to help locate import failure
-        MCP_ERROR("[PLUGIN] Python error loading module '{}': {}", module_name_, e.what());
-        MCP_ERROR("[PLUGIN] Python traceback: {}", e.trace());
+        // MCP_ERROR("[PLUGIN] Python traceback: {}", e.trace());
         return false;
     } catch (const std::exception& e) {
         MCP_ERROR("[PLUGIN] C++ error loading module '{}': {}", module_name_, e.what());
@@ -234,7 +232,8 @@ const char* PythonPluginInstance::call_tool(const char* name, const char* args_j
     } catch (const py::error_already_set& e) {
         // Catch Python exceptions (e.g. JSON parsing errors, tool not found)
         MCP_ERROR("[PLUGIN] call_tool: PYTHON ERROR - {}", e.what());
-        MCP_ERROR("[PLUGIN] call_tool: PYTHON TRACEBACK - {}", e.trace());
+    
+        // MCP_ERROR("[PLUGIN] call_tool: PYTHON TRACEBACK - {}", e.trace());
         if (error) { error->code = -1; error->message = strdup(e.what()); }
         return nullptr;
     } catch (const std::exception& e) {

@@ -1,6 +1,7 @@
 #include "python_runtime_manager.h"
 #include <iostream>
 #include "core/logger.h"
+#include <sstream>
 
 PythonRuntimeManager& PythonRuntimeManager::getInstance() {
     static PythonRuntimeManager instance;
@@ -15,7 +16,9 @@ PythonRuntimeManager::~PythonRuntimeManager() {
     std::lock_guard<std::mutex> lock(runtime_mutex_);
     if (!initialized_) return;
 
-    MCP_DEBUG("[PYTHON] Finalizing Python runtime (thread: {})", std::this_thread::get_id());
+    std::ostringstream oss;
+    oss << std::this_thread::get_id();
+    MCP_DEBUG("[PYTHON] Finalizing Python runtime (thread: {})", oss.str());
 
     // 1. Restore main thread state (must be done before Py_Finalize())
     if (main_thread_state_ != nullptr) {
@@ -37,12 +40,16 @@ PythonRuntimeManager::~PythonRuntimeManager() {
 bool PythonRuntimeManager::initialize(const std::string& plugin_dir) {
     std::lock_guard<std::mutex> lock(runtime_mutex_);
     if (initialized_) {
-        MCP_DEBUG("[PYTHON] Runtime already initialized (thread: {})", std::this_thread::get_id());
+        std::ostringstream oss;
+        oss << std::this_thread::get_id();
+        MCP_DEBUG("[PYTHON] Runtime already initialized (thread: {})", oss.str());
         return true;
     }
 
     try {
-        MCP_DEBUG("[PYTHON] Initializing Python interpreter (thread: {})", std::this_thread::get_id());
+        std::ostringstream oss;
+        oss << std::this_thread::get_id();
+        MCP_DEBUG("[PYTHON] Initializing Python interpreter (thread: {})", oss.str());
         
         // 1. Initialize Python interpreter (void type, no need to check return value)
         Py_Initialize();
@@ -58,7 +65,9 @@ bool PythonRuntimeManager::initialize(const std::string& plugin_dir) {
         if (main_thread_state_ == nullptr) {
             MCP_WARN("[PYTHON] Warning: PyEval_SaveThread() returned null");
         } else {
-            MCP_DEBUG("[PYTHON] Main thread GIL released (thread: {})", std::this_thread::get_id());
+            std::ostringstream oss2;
+            oss2 << std::this_thread::get_id();
+            MCP_DEBUG("[PYTHON] Main thread GIL released (thread: {})", oss2.str());
         }
 
         // 4. Re-acquire GIL and add plugin directory to sys.path
