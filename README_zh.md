@@ -248,6 +248,41 @@ MCPServer++ 现在通过新的 Python SDK 支持 Python 插件，这使得插件
 }
 ```
 
+## Docker 部署
+
+### 构建与运行
+1. **使用多阶段构建**（镜像体积优化至10-15MB）
+   ```bash
+   docker build -t mcp-server .
+   docker run -p 6666:6666 -v $(pwd)/plugins:/plugins -v $(pwd)/certs:/certs mcp-server
+   ```
+
+2. **HTTPS 配置**（需挂载证书目录）
+   ```bash
+   # 启用HTTPS需在config.ini设置 enable_https=1
+   # 证书文件需放置在容器内/certs目录
+   docker run -p 6667:6667 -v $(pwd)/certs:/certs mcp-server
+   ```
+
+### 插件系统
+- **插件路径映射**：容器内插件目录为`/plugins`，建议通过volume映射本地插件目录
+- **插件加载**：支持运行时热加载插件（需确保插件文件权限正确）
+
+### 镜像优化
+- 基于 `gcr.io/distroless/cc-debian12` 最小基础镜像
+- 启用静态链接+剥离调试信息（LTO优化）
+- 国内用户可配置镜像加速器（见文档底部配置示例）
+
+## Docker Hub
+
+预构建的 Docker 镜像可在 Docker Hub 获取：[https://hub.docker.com/r/mgzy/mcp-server](https://hub.docker.com/r/mgzy/mcp-server)
+
+您可以直接拉取并运行最新镜像：
+```bash
+docker pull mgzy/mcp-server
+docker run -p 6666:6666 -v $(pwd)/plugins:/plugins -v $(pwd)/certs:/certs mgzy/mcp-server
+```
+
 ## CI/CD 流水线
 
 我们的项目使用 GitHub Actions 进行持续集成和部署。流水线会自动在多个平台上构建和测试服务器：
