@@ -186,6 +186,10 @@ class MCPHTTPTester:
                 ("http_get", {"url": "http://httpbin.org/get"}, 7),  # International test site
                 ("http_get", {"url": "http://baidu.com"}, 8),  # Chinese site for domestic users
                 ("list_files", {"path": "."}, 9),  # Test current directory
+                
+                # Test Python plugin tools
+                ("python_echo", {"text": "Hello from Python!"}, 10),
+                ("python_calculate", {"expression": "2+2"}, 11),
             ]
             
             # Run tests only for available tools

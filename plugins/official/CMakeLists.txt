@@ -5,3 +5,5 @@ add_subdirectory(http_plugin)
 add_subdirectory(safe_system_plugin)
 
 add_subdirectory(example_stream_plugin)
+
+add_subdirectory(python_example_plugin)
