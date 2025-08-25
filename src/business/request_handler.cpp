@@ -24,17 +24,17 @@ namespace mcp::business {
         router_.register_handler("tools/list", handle_tools_list);
         router_.register_handler("tools/call", handle_tools_call);
         router_.register_handler("exit", handle_exit);
-        
+
         // Register resource handlers
         router_.register_handler("resources/list", handle_resources_list);
         router_.register_handler("resources/read", handle_resources_read);
         router_.register_handler("resources/subscribe", handle_resources_subscribe);
         router_.register_handler("resources/unsubscribe", handle_resources_unsubscribe);
-        
+
         // Register prompt handlers
         router_.register_handler("prompts/list", handle_prompts_list);
         router_.register_handler("prompts/get", handle_prompts_get);
-        
+
         router_.register_handler("notifications/initialized", [](
                                                                       const protocol::Request &,
                                                                       std::shared_ptr<business::ToolRegistry> /*registry*/,

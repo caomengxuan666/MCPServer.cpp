@@ -196,9 +196,8 @@ namespace mcp::protocol {
     std::string generate_error(const Error &error) {
         nlohmann::json j;
         j["error"] = nlohmann::json{
-            {"code", error.code},
-            {"message", error.message}
-        };
+                {"code", error.code},
+                {"message", error.message}};
         if (error.data.has_value()) {
             j["error"]["data"] = error.data.value();
         }
@@ -217,9 +216,8 @@ namespace mcp::protocol {
         nlohmann::json j;
         j["id"] = id;
         j["error"] = nlohmann::json{
-            {"code", code},
-            {"message", message}
-        };
+                {"code", code},
+                {"message", message}};
         return j.dump();
     }
 
@@ -228,9 +226,8 @@ namespace mcp::protocol {
         nlohmann::json j;
         j["id"] = id;
         j["error"] = nlohmann::json{
-            {"code", code},
-            {"message", message}
-        };
+                {"code", code},
+                {"message", message}};
         if (data.has_value()) {
             j["error"]["data"] = data.value();
         }

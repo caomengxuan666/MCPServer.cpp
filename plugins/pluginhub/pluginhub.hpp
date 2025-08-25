@@ -86,13 +86,13 @@ namespace mcp::plugins {
 
         // Download a plugin from remote server
         bool download(const std::string &plugin_name);
-        
+
         // List remote plugins
         std::vector<std::string> listRemote();
-        
+
         // List installed plugins
         std::vector<std::string> listInstalled();
-        
+
         // Check if a plugin is enabled
         bool isPluginEnabled(const std::string &plugin_name);
 
@@ -110,9 +110,9 @@ namespace mcp::plugins {
         PluginHub &operator=(const PluginHub &) = delete;
 
         void tellPlatform();
-        
+
         // Helper methods for plugin management
-        std::vector<std::string> getPluginsInDirectory(const std::string& directory);
+        std::vector<std::string> getPluginsInDirectory(const std::string &directory);
 
         static mcp::config::PluginHubConfig config_;
         static std::unique_ptr<PluginHub> instance_;

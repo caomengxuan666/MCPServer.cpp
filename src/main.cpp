@@ -3,12 +3,12 @@
 #include "core/logger.h"
 #include "core/server.h"
 #include "metrics/metrics_manager.h"
-#include "metrics/rate_limiter.h"
 #include "metrics/performance_metrics.h"
+#include "metrics/rate_limiter.h"
 #include "utils/auth_utils.h"
-#include <csignal>
 #include <asio/io_context.hpp>
 #include <asio/signal_set.hpp>
+#include <csignal>
 #include <cstdlib>
 #include <thread>
 
@@ -79,10 +79,10 @@ int main() {
         rate_limit_config.max_request_size = config.server.max_request_size;
         rate_limit_config.max_response_size = config.server.max_response_size;
         rate_limiter->set_config(rate_limit_config);
-        
+
         rate_limiter->set_rate_limit_callback([](
-            const std::string& session_id,
-            mcp::metrics::RateLimitDecision decision) {
+                                                      const std::string &session_id,
+                                                      mcp::metrics::RateLimitDecision decision) {
             switch (decision) {
                 case mcp::metrics::RateLimitDecision::ALLOW:
                     MCP_DEBUG("Request allowed - Session: {}", session_id);
@@ -138,14 +138,14 @@ int main() {
         // Setup signal handler for graceful shutdown
         asio::io_context io_context;
         asio::signal_set signals(io_context, SIGINT, SIGTERM);
-        
-        signals.async_wait([&](const asio::error_code& error, int signal_number) {
+
+        signals.async_wait([&](const asio::error_code &error, int signal_number) {
             if (!error) {
                 MCP_INFO("Received signal {}, initiating graceful shutdown...", signal_number);
                 std::quick_exit(0);
             }
         });
-        
+
         // Run the signal handler in a separate thread
         std::thread signal_thread([&io_context]() {
             io_context.run();

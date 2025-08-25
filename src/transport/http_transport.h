@@ -4,9 +4,9 @@
 #define _WIN32_WINNT 0x0601
 #endif
 
+#include "Auth/AuthManager.hpp"
 #include "base_transport.h"
 #include "transport_types.h"
-#include "Auth/AuthManager.hpp"
 #include <asio.hpp>
 #include <memory>
 
@@ -34,9 +34,9 @@ namespace mcp::transport {
         void stop() override;
 
     private:
-        asio::awaitable<void> do_accept();                                     // Legacy placeholder, not used
-        bool is_running_ = false;                                              ///< Transport running flag
-        std::shared_ptr<AuthManagerBase> auth_manager_;                        ///< Authentication manager
+        asio::awaitable<void> do_accept();             // Legacy placeholder, not used
+        bool is_running_ = false;                      ///< Transport running flag
+        std::shared_ptr<AuthManagerBase> auth_manager_;///< Authentication manager
     };
 
 }// namespace mcp::transport

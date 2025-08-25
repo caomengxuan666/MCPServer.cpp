@@ -1,10 +1,10 @@
 #include "http_transport.h"
+#include "base_transport.h"
 #include "core/io_context_pool.hpp"
 #include "core/logger.h"
+#include "http_handler.h"
 #include "session.h"
 #include "tcp_session.h"
-#include "base_transport.h"
-#include "http_handler.h"
 
 
 using asio::use_awaitable;
@@ -42,7 +42,7 @@ namespace mcp::transport {
         } else {
             MCP_DEBUG("HTTP transport auth manager not initialized (auth disabled)");
         }
-        
+
         handler_ = std::make_unique<HttpHandler>(std::move(on_message), auth_manager_);
         is_running_ = true;
         MCP_INFO("Streamable HTTP Transport started on {}:{}",

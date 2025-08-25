@@ -1,7 +1,7 @@
 #pragma once
 
-#include "protocol/json_rpc.h"
 #include "Prompts/prompt.h"
+#include "protocol/json_rpc.h"
 #include "tool_registry.h"
 #include "transport/session.h"
 #include <memory>
@@ -14,11 +14,11 @@ namespace mcp::routers {
      * @return Response with list of available prompts
      */
     inline protocol::Response handle_prompts_list(
-            const protocol::Request& req,
+            const protocol::Request &req,
             std::shared_ptr<business::ToolRegistry> /*registry*/,
             std::shared_ptr<transport::Session> /*session*/,
-            const std::string& /*session_id*/) {
-        
+            const std::string & /*session_id*/) {
+
         protocol::Response resp;
         resp.id = req.id.value_or(nullptr);
 
@@ -29,32 +29,32 @@ namespace mcp::routers {
         mcp::prompts::Prompt analyzeCodePrompt;
         analyzeCodePrompt.name = "analyze-code";
         analyzeCodePrompt.description = "Analyze a code snippet";
-        
+
         mcp::prompts::PromptArgument languageArg;
         languageArg.name = "language";
         languageArg.description = "programming language";
         languageArg.required = true;
         analyzeCodePrompt.arguments.push_back(languageArg);
-        
+
         prompts.push_back(analyzeCodePrompt);
 
         // Example git-commit prompt
         mcp::prompts::Prompt gitCommitPrompt;
         gitCommitPrompt.name = "git-commit";
         gitCommitPrompt.description = "generate Git commit message";
-        
+
         mcp::prompts::PromptArgument changesArg;
         changesArg.name = "changes";
         changesArg.description = "Git diff or changes description";
         changesArg.required = true;
         gitCommitPrompt.arguments.push_back(changesArg);
-        
+
         prompts.push_back(gitCommitPrompt);
 
         // Build response
         nlohmann::json result;
         nlohmann::json promptsJson = nlohmann::json::array();
-        for (const auto& prompt : prompts) {
+        for (const auto &prompt: prompts) {
             promptsJson.push_back(mcp::prompts::to_json(prompt));
         }
         result["prompts"] = promptsJson;
@@ -63,4 +63,4 @@ namespace mcp::routers {
         return resp;
     }
 
-} // namespace mcp::routers
+}// namespace mcp::routers

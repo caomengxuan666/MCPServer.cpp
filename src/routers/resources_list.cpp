@@ -11,26 +11,26 @@ namespace mcp::routers {
             std::shared_ptr<business::ToolRegistry> /*registry*/,
             std::shared_ptr<transport::Session> /*session*/,
             const std::string &session_id) {
-        
+
         MCP_DEBUG("Handling resources/list request for session: {}", session_id);
-        
+
         // make a resp object
         protocol::Response resp;
         resp.id = req.id;
-        
+
         try {
             // get the resource manager
             mcp::resources::ResourceManager resource_manager;
-            
+
             // get the resources and templates
             auto resources = resource_manager.get_resources();
             auto templates = resource_manager.get_resource_templates();
-            
+
             nlohmann::json result;
-            
+
             // add the resources list
             nlohmann::json resource_list = nlohmann::json::array();
-            for (const auto& resource : resources) {
+            for (const auto &resource: resources) {
                 nlohmann::json res;
                 res["uri"] = resource.uri;
                 res["name"] = resource.name;
@@ -43,10 +43,10 @@ namespace mcp::routers {
                 resource_list.push_back(res);
             }
             result["resources"] = resource_list;
-            
+
             // add templates list
             nlohmann::json template_list = nlohmann::json::array();
-            for (const auto& resourceTemplate : templates) {
+            for (const auto &resourceTemplate: templates) {
                 nlohmann::json tmpl;
                 tmpl["uriTemplate"] = resourceTemplate.uriTemplate;
                 tmpl["name"] = resourceTemplate.name;
@@ -59,16 +59,16 @@ namespace mcp::routers {
                 template_list.push_back(tmpl);
             }
             result["resourceTemplates"] = template_list;
-            
+
             resp.result = result;
-        } catch (const std::exception& e) {
+        } catch (const std::exception &e) {
             MCP_ERROR("Error handling resources/list request: {}", e.what());
             resp.result = nlohmann::json::parse(protocol::make_error(
-                protocol::error_code::INTERNAL_ERROR,
-                "Failed to list resources: " + std::string(e.what()),
-                req.id));
+                    protocol::error_code::INTERNAL_ERROR,
+                    "Failed to list resources: " + std::string(e.what()),
+                    req.id));
         }
-        
+
         return resp;
     }
 

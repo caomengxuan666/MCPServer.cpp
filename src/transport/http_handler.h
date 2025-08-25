@@ -5,10 +5,10 @@
 #endif
 
 #include "Auth/AuthManager.hpp"
+#include "metrics/rate_limiter.h"
 #include "session.h"
 #include "ssl_session.h"
 #include "transport_types.h"
-#include "metrics/rate_limiter.h"
 #include <asio.hpp>
 #include <functional>
 #include <memory>
@@ -23,10 +23,10 @@ namespace mcp {
         struct Request;
         struct Response;
     }// namespace protocol
-    namespace metrics{
+    namespace metrics {
         class MetricsManager;
         class RateLimiter;
-    }
+    }// namespace metrics
 }// namespace mcp
 
 namespace mcp::transport {

@@ -4,9 +4,9 @@
 #define _WIN32_WINNT 0x0601
 #endif
 
+#include "Auth/AuthManager.hpp"
 #include "base_transport.h"
 #include "transport_types.h"
-#include "Auth/AuthManager.hpp"
 #include <asio.hpp>
 #include <asio/ssl.hpp>
 namespace mcp::transport {
@@ -38,10 +38,10 @@ namespace mcp::transport {
         asio::awaitable<void> accept_loop();                                              ///< Main loop for accepting connections
         void load_certificates(const std::string &cert_file, const std::string &key_file);///< Load SSL certificates
 
-        asio::awaitable<void> do_accept();                                     // Legacy placeholder, not used
-        asio::ssl::context ssl_context_;                                       ///< SSL context with security configuration
-        bool is_running_ = false;                                              ///< Transport running flag
-        std::shared_ptr<AuthManagerBase> auth_manager_;                        ///< Authentication manager
+        asio::awaitable<void> do_accept();             // Legacy placeholder, not used
+        asio::ssl::context ssl_context_;               ///< SSL context with security configuration
+        bool is_running_ = false;                      ///< Transport running flag
+        std::shared_ptr<AuthManagerBase> auth_manager_;///< Authentication manager
     };
 
 }// namespace mcp::transport

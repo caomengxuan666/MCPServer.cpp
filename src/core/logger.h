@@ -83,9 +83,9 @@ namespace mcp {
             void critical(const char *msg);
 
             void set_level(LogLevel level);
-            static void enable_file_sink(){enable_file_logging_ = true;}
-            static void disable_file_sink(){enable_file_logging_ = false;}
-            static bool is_file_sink_enabled() {return enable_file_logging_;}
+            static void enable_file_sink() { enable_file_logging_ = true; }
+            static void disable_file_sink() { enable_file_logging_ = false; }
+            static bool is_file_sink_enabled() { return enable_file_logging_; }
 
             LogLevel get_level() const;
 

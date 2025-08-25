@@ -12,7 +12,6 @@ namespace mcp::core {
         explicit McpDispatcher();
         static void send_sse_error_event(std::shared_ptr<mcp::transport::Session> session, const std::string &message);
         static void send_json_response(std::shared_ptr<mcp::transport::Session> session, const std::string &json_body, int status_code);
-
     };
 
 }// namespace mcp::core

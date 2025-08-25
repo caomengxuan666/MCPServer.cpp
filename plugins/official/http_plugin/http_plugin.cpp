@@ -38,7 +38,7 @@ static std::string http_get(const std::string &url) {
         auto res = client.Get(path.c_str());
         if (!res) {
             // Return custom error code and message, consistent with safe_system_plugin
-            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                  "Request failed: Network error or invalid URL");
         }
 
@@ -46,7 +46,7 @@ static std::string http_get(const std::string &url) {
         return mcp::protocol::generate_result(nlohmann::json{{"content", res->body}});
     } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "HTTP GET request failed: " + std::string(e.what()));
     }
 }
@@ -78,7 +78,7 @@ static std::string http_post(const std::string &url, const std::string &body) {
         auto res = client.Post(path.c_str(), body, "application/json");
         if (!res) {
             // Return custom error code and message, consistent with safe_system_plugin
-            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                  "Request failed: Network error or invalid URL");
         }
 
@@ -86,7 +86,7 @@ static std::string http_post(const std::string &url, const std::string &body) {
         return mcp::protocol::generate_result(nlohmann::json{{"content", res->body}});
     } catch (const std::exception &e) {
         // Return custom error code and message, consistent with safe_system_plugin
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "HTTP POST request failed: " + std::string(e.what()));
     }
 }

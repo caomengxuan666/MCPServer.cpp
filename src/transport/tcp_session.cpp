@@ -110,7 +110,7 @@ namespace mcp::transport {
         try {
             // Send the message without clearing the buffer to allow streaming
             co_await asio::async_write(socket_, asio::buffer(message), use_awaitable);
-            
+
             // If flush is requested, ensure data is sent immediately
             if (flush) {
                 // The async_write operation already flushes, so no additional action needed
@@ -140,15 +140,15 @@ namespace mcp::transport {
             // then the chunk data followed by CRLF
             std::ostringstream chunk_header;
             chunk_header << std::hex << chunk.size() << "\r\n";
-            
+
             // Send chunk header
             co_await asio::async_write(socket_, asio::buffer(chunk_header.str()), use_awaitable);
-            
+
             // Send chunk data
             if (!chunk.empty()) {
                 co_await asio::async_write(socket_, asio::buffer(chunk), use_awaitable);
             }
-            
+
             // Send trailing CRLF
             co_await asio::async_write(socket_, asio::buffer("\r\n"), use_awaitable);
         } catch (const std::exception &e) {
@@ -174,7 +174,7 @@ namespace mcp::transport {
             headers << "Transfer-Encoding: chunked\r\n";
             headers << "Connection: keep-alive\r\n";
             headers << "\r\n";
-            
+
             co_await asio::async_write(socket_, asio::buffer(headers.str()), use_awaitable);
             streaming_ = true;
         } catch (const std::exception &e) {
@@ -192,9 +192,9 @@ namespace mcp::transport {
             // If in streaming mode, send the final chunk (0-length chunk)
             if (streaming_) {
                 asio::error_code ec;
-                asio::write(socket_, asio::buffer("0\r\n\r\n", 5), ec); // Final chunk
+                asio::write(socket_, asio::buffer("0\r\n\r\n", 5), ec);// Final chunk
             }
-            
+
             asio::error_code ec;
 
             // Cancel pending operations
