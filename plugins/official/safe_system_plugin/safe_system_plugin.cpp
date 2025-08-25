@@ -40,7 +40,7 @@ static std::string get_current_time() {
         return mcp::protocol::generate_result(nlohmann::json{{"current_time", ss.str()}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "Failed to get current time: " + std::string(e.what()));
     }
 }
@@ -62,7 +62,7 @@ static std::string get_system_info() {
         return mcp::protocol::generate_result(nlohmann::json{{"os", os}, {"arch", arch}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "Failed to get system info: " + std::string(e.what()));
     }
 }
@@ -77,7 +77,7 @@ static std::string list_files(const std::string &path) {
         // Prevent path traversal attacks
         if (path.find("..") != std::string::npos) {
             // Return custom error code and message
-            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                  "Path traversal is not allowed");
         }
 
@@ -95,7 +95,7 @@ static std::string list_files(const std::string &path) {
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
         if (!pipe) {
             // Return custom error code and message
-            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                  "Failed to list files: Pipe creation failed");
         }
 
@@ -108,7 +108,7 @@ static std::string list_files(const std::string &path) {
         return mcp::protocol::generate_result(nlohmann::json{{"files", result}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "Failed to list files: " + std::string(e.what()));
     }
 }
@@ -125,7 +125,7 @@ static std::string ping_host(const std::string &host) {
                 return std::isalnum(c) || c == '.' || c == '-';
             })) {
             // Return custom error code and message
-            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                  "Invalid host name format");
         }
 
@@ -143,7 +143,7 @@ static std::string ping_host(const std::string &host) {
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
         if (!pipe) {
             // Return custom error code and message
-            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+            return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                  "Ping command failed: Pipe creation failed");
         }
 
@@ -160,7 +160,7 @@ static std::string ping_host(const std::string &host) {
         return mcp::protocol::generate_result(nlohmann::json{{"output", result}, {"success", success}});
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "Ping command failed: " + std::string(e.what()));
     }
 }
@@ -174,7 +174,7 @@ static std::string check_connectivity() {
         return ping_host("8.8.8.8");// Use Google DNS as test target
     } catch (const std::exception &e) {
         // Return custom error code and message
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "Failed to check connectivity: " + std::string(e.what()));
     }
 }
@@ -225,7 +225,7 @@ static std::string get_public_ip() {
 #endif
             std::unique_ptr<FILE, decltype(&pclose)> foreign_pipe(popen(foreign_cmd.c_str(), "r"), pclose);
             if (!foreign_pipe) {
-                return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                      "curl command not found when trying foreign service");
             }
             std::array<char, 128> foreign_buffer;
@@ -237,13 +237,13 @@ static std::string get_public_ip() {
                 return mcp::protocol::generate_result(nlohmann::json{{"public_ip", ip}});
             } else {
                 // Return custom error code and message if still failed
-                return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+                return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                                      "Failed to get public IP after trying both domestic and foreign services");
             }
         }
     } catch (const std::exception &e) {
         // If an exception occurs, return an error message with the exception details
-        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND, 
+        return mcp::protocol::generate_error(mcp::protocol::error_code::TOOL_NOT_FOUND,
                                              "Failed to get public IP: " + std::string(e.what()));
     }
 }

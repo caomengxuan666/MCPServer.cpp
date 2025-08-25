@@ -64,7 +64,7 @@ namespace mcp::business {
         // Initialize plugin if it has initialize_plugin function
         if (initialize_plugin) {
             MCP_DEBUG("Initializing plugin: {}", plugin_file_path);
-            MCP_DEBUG("initialize_plugin function pointer: {}", (void*)initialize_plugin);
+            MCP_DEBUG("initialize_plugin function pointer: {}", (void *) initialize_plugin);
             bool init_result = initialize_plugin(plugin_file_path.c_str());
             MCP_DEBUG("initialize_plugin returned: {}", init_result);
             if (!init_result) {

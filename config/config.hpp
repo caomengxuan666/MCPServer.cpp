@@ -62,12 +62,12 @@ namespace mcp {
             bool enable_http;              // Enable HTTP transport protocol
             bool enable_https;             // Enable HTTPS transport protocol
             bool enable_auth;              // Enable authentication
-            
+
             // Rate limiter configuration
-            size_t max_requests_per_second;  // Maximum requests allowed per second
-            size_t max_concurrent_requests;  // Maximum concurrent requests
-            size_t max_request_size;         // Maximum request size in bytes
-            size_t max_response_size;        // Maximum response size in bytes
+            size_t max_requests_per_second;// Maximum requests allowed per second
+            size_t max_concurrent_requests;// Maximum concurrent requests
+            size_t max_request_size;       // Maximum request size in bytes
+            size_t max_response_size;      // Maximum response size in bytes
 
             /**
              * Loads server configuration from INI file
@@ -99,7 +99,7 @@ namespace mcp {
                     config.port = server_section["port"].String().empty() ? 6666 : static_cast<unsigned short>(server_section["port"]);
                     config.http_port = server_section["http_port"].String().empty() ? 6666 : static_cast<unsigned short>(server_section["http_port"]);
                     config.https_port = server_section["https_port"].String().empty() ? 6667 : static_cast<unsigned short>(server_section["https_port"]);
-                    
+
                     // Rate limiter values
                     config.max_requests_per_second = server_section["max_requests_per_second"].String().empty() ? 100 : static_cast<size_t>(server_section["max_requests_per_second"]);
                     config.max_concurrent_requests = server_section["max_concurrent_requests"].String().empty() ? 1000 : static_cast<size_t>(server_section["max_concurrent_requests"]);
@@ -242,8 +242,8 @@ namespace mcp {
                 // Rate limiter configuration
                 ini.set("server", "max_requests_per_second", 100);
                 ini.set("server", "max_concurrent_requests", 1000);
-                ini.set("server", "max_request_size", 1024 * 1024);     // 1MB
-                ini.set("server", "max_response_size", 10 * 1024 * 1024); // 10MB
+                ini.set("server", "max_request_size", 1024 * 1024);      // 1MB
+                ini.set("server", "max_response_size", 10 * 1024 * 1024);// 10MB
 
                 // Plugin hub section configuration
                 ini.set("plugin_hub", "plugin_server_baseurl", "http://47.120.50.122");

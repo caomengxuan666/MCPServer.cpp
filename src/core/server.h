@@ -5,16 +5,15 @@
 #endif
 
 
+#include "Auth/AuthManager.hpp"
+#include "Prompts/prompt.h"
+#include "Resources/resource.h"
 #include "business/request_handler.h"
 #include "business/tool_registry.h"
-#include "Prompts/prompt.h"
+#include "core/mcp_dispatcher.h"
 #include "transport/http_transport.h"
 #include "transport/https_transport.h"
 #include "transport/stdio_transport.h"
-#include "business/request_handler.h"
-#include "core/mcp_dispatcher.h"
-#include "Auth/AuthManager.hpp"
-#include "Resources/resource.h"
 #include <asio/io_context.hpp>
 #include <memory>
 #include <vector>
@@ -42,13 +41,13 @@ namespace mcp::core {
         bool start_stdio_transport();
         std::shared_ptr<business::ToolRegistry> registry_;
         std::shared_ptr<resources::ResourceManager> resource_manager_;
-        std::shared_ptr<prompts::PromptManager> prompt_manager_; 
+        std::shared_ptr<prompts::PromptManager> prompt_manager_;
         std::unique_ptr<McpDispatcher> dispatcher_;
         std::unique_ptr<mcp::transport::HttpTransport> http_transport_;
         std::unique_ptr<mcp::transport::HttpsTransport> https_transport_;
         mcp::transport::StdioTransport stdio_transport_;
         std::unique_ptr<business::RequestHandler> request_handler_;
-        std::shared_ptr<business::PluginManager>plugin_manager_;
+        std::shared_ptr<business::PluginManager> plugin_manager_;
 
         // Used to record configuration
         bool should_register_echo_tool_ = false;
@@ -58,7 +57,7 @@ namespace mcp::core {
 
 
         asio::io_context io_context_;
-        std::shared_ptr<AuthManagerBase> auth_manager_; // Authentication manager
+        std::shared_ptr<AuthManagerBase> auth_manager_;// Authentication manager
     };
 
     class MCPserver::Builder {
@@ -108,7 +107,7 @@ namespace mcp::core {
         std::string cert_file_ = "server.crt";
         std::string private_key_file_ = "server.key";
         std::string dh_params_file_ = "dh2048.pem";
-        std::shared_ptr<AuthManagerBase> auth_manager_ = nullptr; // Authentication manager
+        std::shared_ptr<AuthManagerBase> auth_manager_ = nullptr;// Authentication manager
     };
 
 }// namespace mcp::core

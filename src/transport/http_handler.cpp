@@ -1,11 +1,11 @@
 #include "http_handler.h"
 #include "core/logger.h"
+#include "metrics/metrics_manager.h"
+#include "metrics/performance_metrics.h"
+#include "metrics/rate_limiter.h"
 #include "nlohmann/json.hpp"
 #include "session.h"
 #include "ssl_session.h"
-#include "metrics/performance_metrics.h"
-#include "metrics/metrics_manager.h"
-#include "metrics/rate_limiter.h"
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -205,19 +205,44 @@ namespace mcp::transport {
         // Map status codes to human-readable descriptions
         std::string status_str;
         switch (status_code) {
-            case 200: status_str = "OK"; break;
-            case 201: status_str = "Created"; break;
-            case 202: status_str = "Accepted"; break;
-            case 204: status_str = "No Content"; break;
-            case 400: status_str = "Bad Request"; break;
-            case 401: status_str = "Unauthorized"; break;
-            case 403: status_str = "Forbidden"; break;
-            case 404: status_str = "Not Found"; break;
-            case 405: status_str = "Method Not Allowed"; break;
-            case 500: status_str = "Internal Server Error"; break;
-            case 501: status_str = "Not Implemented"; break;
-            case 503: status_str = "Service Unavailable"; break;
-            default: status_str = "Unknown";
+            case 200:
+                status_str = "OK";
+                break;
+            case 201:
+                status_str = "Created";
+                break;
+            case 202:
+                status_str = "Accepted";
+                break;
+            case 204:
+                status_str = "No Content";
+                break;
+            case 400:
+                status_str = "Bad Request";
+                break;
+            case 401:
+                status_str = "Unauthorized";
+                break;
+            case 403:
+                status_str = "Forbidden";
+                break;
+            case 404:
+                status_str = "Not Found";
+                break;
+            case 405:
+                status_str = "Method Not Allowed";
+                break;
+            case 500:
+                status_str = "Internal Server Error";
+                break;
+            case 501:
+                status_str = "Not Implemented";
+                break;
+            case 503:
+                status_str = "Service Unavailable";
+                break;
+            default:
+                status_str = "Unknown";
         }
 
         // Build HTTP response
@@ -265,15 +290,16 @@ namespace mcp::transport {
 
         // Send the complete response
         std::string response = oss.str();
-        
+
         if (is_chunked) {
             // For chunked responses, we send the headers first
             co_await session->write(response);
-            
+
             // Then send the body as a chunk
             if (!body.empty()) {
                 std::ostringstream chunk_stream;
-                chunk_stream << std::hex << body.size() << "\r\n" << body << "\r\n";
+                chunk_stream << std::hex << body.size() << "\r\n"
+                             << body << "\r\n";
                 std::string chunk = chunk_stream.str();
                 co_await session->write(chunk);
             }
@@ -284,7 +310,7 @@ namespace mcp::transport {
             }
             co_await session->write(response);
         }
-        
+
         if constexpr (std::is_same_v<SessionType, Session>) {
             MCP_DEBUG("Sent HTTP {} response (Session: {})", status_code, session->get_session_id());
         } else {
@@ -322,7 +348,7 @@ namespace mcp::transport {
             const std::string &raw_request) {
         // Start performance tracking
         auto metrics = mcp::metrics::PerformanceTracker::start_tracking(raw_request.size());
-        
+
         // Parse HTTP request
         size_t bytes_parsed = 0;// New variable to record parsed bytes
         auto req_opt = parse_request(raw_request);
@@ -368,15 +394,14 @@ namespace mcp::transport {
                 }
 
                 co_await send_http_response_impl(session, R"({"error":"Invalid HTTP request"})", 400);
-                
+
                 // End performance tracking for invalid requests
                 mcp::metrics::PerformanceTracker::end_tracking(metrics, error_response.size());
                 metrics_manager_->report_performance(
-                    mcp::metrics::TrackedHttpRequest{}, 
-                    metrics, 
-                    session->get_session_id()
-                );
-                
+                        mcp::metrics::TrackedHttpRequest{},
+                        metrics,
+                        session->get_session_id());
+
                 co_return;
             }
 
@@ -393,7 +418,7 @@ namespace mcp::transport {
 
                 std::string not_found_response = R"({"error":"Not Found"})";
                 co_await send_http_response_impl(session, not_found_response, 404);
-                
+
                 // End performance tracking for not found requests
                 mcp::metrics::PerformanceTracker::end_tracking(metrics, not_found_response.size());
                 mcp::metrics::TrackedHttpRequest tracked_req;
@@ -402,13 +427,12 @@ namespace mcp::transport {
                 tracked_req.version = req.version;
                 tracked_req.headers = req.headers;
                 tracked_req.body = req.body;
-                
+
                 metrics_manager_->report_performance(
-                    tracked_req, 
-                    metrics, 
-                    session->get_session_id()
-                );
-                
+                        tracked_req,
+                        metrics,
+                        session->get_session_id());
+
                 co_return;
             }
 
@@ -425,31 +449,30 @@ namespace mcp::transport {
             tracked_req_for_rate_limiting.version = req.version;
             tracked_req_for_rate_limiting.headers = req.headers;
             tracked_req_for_rate_limiting.body = req.body;
-            
+
             auto rate_limit_decision = rate_limiter_->check_request_allowed(
-                tracked_req_for_rate_limiting, 
-                session->get_session_id()
-            );
-            
+                    tracked_req_for_rate_limiting,
+                    session->get_session_id());
+
             if (rate_limit_decision != mcp::metrics::RateLimitDecision::ALLOW) {
                 std::string rate_limit_response;
-                int status_code = 429; // Too Many Requests
-                
+                int status_code = 429;// Too Many Requests
+
                 switch (rate_limit_decision) {
                     case mcp::metrics::RateLimitDecision::RATE_LIMITED:
                         rate_limit_response = R"({"error":"Rate limit exceeded"})";
                         break;
                     case mcp::metrics::RateLimitDecision::TOO_LARGE:
                         rate_limit_response = R"({"error":"Request too large"})";
-                        status_code = 413; // Payload Too Large
+                        status_code = 413;// Payload Too Large
                         break;
                     default:
                         rate_limit_response = R"({"error":"Request not allowed"})";
                         break;
                 }
-                
+
                 co_await send_http_response_impl(session, rate_limit_response, status_code);
-                
+
                 // End performance tracking for rate limited requests
                 mcp::metrics::PerformanceTracker::end_tracking(metrics, rate_limit_response.size());
                 mcp::metrics::TrackedHttpRequest tracked_req;
@@ -458,15 +481,14 @@ namespace mcp::transport {
                 tracked_req.version = req.version;
                 tracked_req.headers = req.headers;
                 tracked_req.body = req.body;
-                
+
                 metrics_manager_->report_performance(
-                    tracked_req, 
-                    metrics, 
-                    session->get_session_id()
-                );
-                
+                        tracked_req,
+                        metrics,
+                        session->get_session_id());
+
                 rate_limiter_->report_request_completed(session->get_session_id());
-                
+
                 co_return;
             }
 
@@ -479,7 +501,7 @@ namespace mcp::transport {
                 std::string accept_header = get_header_value(req.headers, "Accept");
                 if (accept_header.find("text/event-stream") != std::string::npos) {
                     session->set_accept_header(accept_header);
-                    
+
                     // End performance tracking for SSE requests
                     mcp::metrics::PerformanceTracker::end_tracking(metrics, 0);
                     mcp::metrics::TrackedHttpRequest tracked_req;
@@ -488,18 +510,17 @@ namespace mcp::transport {
                     tracked_req.version = req.version;
                     tracked_req.headers = req.headers;
                     tracked_req.body = req.body;
-                    
+
                     metrics_manager_->report_performance(
-                        tracked_req, 
-                        metrics, 
-                        session->get_session_id()
-                    );
-                    
+                            tracked_req,
+                            metrics,
+                            session->get_session_id());
+
                     co_return;// Wait for business layer to send SSE header
                 } else {
                     std::string method_not_allowed_response = R"({"error":"Method Not Allowed"})";
                     co_await send_http_response_impl(session, method_not_allowed_response, 405);
-                    
+
                     // End performance tracking for method not allowed requests
                     mcp::metrics::PerformanceTracker::end_tracking(metrics, method_not_allowed_response.size());
                     mcp::metrics::TrackedHttpRequest tracked_req;
@@ -508,13 +529,12 @@ namespace mcp::transport {
                     tracked_req.version = req.version;
                     tracked_req.headers = req.headers;
                     tracked_req.body = req.body;
-                    
+
                     metrics_manager_->report_performance(
-                        tracked_req, 
-                        metrics, 
-                        session->get_session_id()
-                    );
-                    
+                            tracked_req,
+                            metrics,
+                            session->get_session_id());
+
                     co_return;
                 }
             }
@@ -550,7 +570,7 @@ namespace mcp::transport {
                     if (after_request_callback_) {
                         after_request_callback_(req, "", 202, session_id);
                     }
-                    
+
                     // End performance tracking for notifications
                     mcp::metrics::PerformanceTracker::end_tracking(metrics, 0);
                     mcp::metrics::TrackedHttpRequest tracked_req;
@@ -559,12 +579,11 @@ namespace mcp::transport {
                     tracked_req.version = req.version;
                     tracked_req.headers = req.headers;
                     tracked_req.body = req.body;
-                    
+
                     metrics_manager_->report_performance(
-                        tracked_req, 
-                        metrics, 
-                        session->get_session_id()
-                    );
+                            tracked_req,
+                            metrics,
+                            session->get_session_id());
                 }
 
                 co_return;
@@ -579,7 +598,7 @@ namespace mcp::transport {
                 if (after_request_callback_) {
                     after_request_callback_(req, "", 204, session_id);
                 }
-                
+
                 // End performance tracking for DELETE requests
                 mcp::metrics::PerformanceTracker::end_tracking(metrics, 0);
                 mcp::metrics::TrackedHttpRequest tracked_req;
@@ -588,22 +607,21 @@ namespace mcp::transport {
                 tracked_req.version = req.version;
                 tracked_req.headers = req.headers;
                 tracked_req.body = req.body;
-                
+
                 metrics_manager_->report_performance(
-                    tracked_req, 
-                    metrics, 
-                    session->get_session_id()
-                );
-                
+                        tracked_req,
+                        metrics,
+                        session->get_session_id());
+
                 rate_limiter_->report_request_completed(session->get_session_id());
-                
+
                 co_return;
             }
             // Unsupported method
             else {
                 std::string method_not_allowed_response = R"({"error":"Method Not Allowed"})";
                 co_await send_http_response_impl(session, method_not_allowed_response, 405);
-                
+
                 // End performance tracking for unsupported method requests
                 mcp::metrics::PerformanceTracker::end_tracking(metrics, method_not_allowed_response.size());
                 mcp::metrics::TrackedHttpRequest tracked_req;
@@ -612,15 +630,14 @@ namespace mcp::transport {
                 tracked_req.version = req.version;
                 tracked_req.headers = req.headers;
                 tracked_req.body = req.body;
-                
+
                 metrics_manager_->report_performance(
-                    tracked_req, 
-                    metrics, 
-                    session->get_session_id()
-                );
-                
+                        tracked_req,
+                        metrics,
+                        session->get_session_id());
+
                 rate_limiter_->report_request_completed(session->get_session_id());
-                
+
                 co_return;
             }
         } catch (const std::exception &e) {
@@ -631,10 +648,10 @@ namespace mcp::transport {
             if (on_error_callback_) {
                 on_error_callback_(e.what(), session->get_session_id());
             }
-            
+
             // Report error to metrics manager
             metrics_manager_->report_error(e.what(), session->get_session_id());
-            
+
             rate_limiter_->report_request_completed(session->get_session_id());
 
             session->close();
@@ -643,7 +660,7 @@ namespace mcp::transport {
         if (error_occurred) {
             co_await send_http_response_impl(session, error_response, 500);
         }
-        
+
         // End performance tracking for successful requests
         mcp::metrics::PerformanceTracker::end_tracking(metrics, error_response.size());
         mcp::metrics::TrackedHttpRequest tracked_req;
@@ -652,13 +669,12 @@ namespace mcp::transport {
         tracked_req.version = req.version;
         tracked_req.headers = req.headers;
         tracked_req.body = req.body;
-        
+
         metrics_manager_->report_performance(
-            tracked_req, 
-            metrics, 
-            session->get_session_id()
-        );
-        
+                tracked_req,
+                metrics,
+                session->get_session_id());
+
         rate_limiter_->report_request_completed(session->get_session_id());
     }
 
@@ -808,7 +824,8 @@ namespace mcp::transport {
         }
 
         std::ostringstream oss;
-        oss << std::hex << chunk.size() << "\r\n" << chunk << "\r\n";
+        oss << std::hex << chunk.size() << "\r\n"
+            << chunk << "\r\n";
         co_await session->write(oss.str());
         co_return;
     }

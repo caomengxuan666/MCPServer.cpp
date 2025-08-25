@@ -10,14 +10,14 @@
 #include "plugins/pluginhub/pluginhub.hpp"
 
 // STL
+#include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <mutex>
-#include <unordered_map>
-#include <fstream>
 #include <sstream>
-#include <cstdlib>
+#include <unordered_map>
 
 
 namespace fs = std::filesystem;
@@ -54,7 +54,7 @@ namespace mcp {
                 std::lock_guard<std::mutex> lock(mutex_);
                 return list_remote_;
             }
-            
+
             bool isPythonPlugin() const {
                 std::lock_guard<std::mutex> lock(mutex_);
                 return python_plugin_;
@@ -347,12 +347,12 @@ namespace mcp {
                 // Create C++ plugin template (existing code)
                 auto current_dir = fs::current_path();
                 fs::path plugins_dir = current_dir / plugin_id;
-                
+
                 if (fs::exists(plugins_dir)) {
                     std::cerr << "Error: Plugin directory already exists: " << plugins_dir << std::endl;
                     return;
                 }
-                
+
                 try {
                     // Create plugin directory
                     fs::create_directory(plugins_dir);
@@ -540,37 +540,37 @@ namespace mcp {
                 }
             }
         }
-        
+
         void handle_build(const std::string &plugin_id) {
             // Build Python plugin to DLL
             auto current_dir = fs::current_path();
             fs::path plugins_dir = current_dir / plugin_id;
-            
+
             if (!fs::exists(plugins_dir)) {
                 std::cerr << "Error: Plugin directory does not exist: " << plugins_dir << std::endl;
                 return;
             }
-            
+
             // Check if it's a Python plugin by looking for .py file
             fs::path plugin_py_file = plugins_dir / (plugin_id + ".py");
             if (!fs::exists(plugin_py_file)) {
                 std::cerr << "Error: Python plugin file not found: " << plugin_py_file << std::endl;
                 return;
             }
-            
+
             try {
                 // Change to plugin directory
                 fs::current_path(plugins_dir);
-                
+
                 // Create build directory
                 fs::path build_dir = plugins_dir / "build";
                 if (!fs::exists(build_dir)) {
                     fs::create_directory(build_dir);
                 }
-                
+
                 // Change to build directory
                 fs::current_path(build_dir);
-                
+
                 // Run cmake
                 std::cout << "Configuring Python plugin build..." << std::endl;
                 int cmake_result = std::system("cmake ..");
@@ -578,7 +578,7 @@ namespace mcp {
                     std::cerr << "Error: CMake configuration failed" << std::endl;
                     return;
                 }
-                
+
                 // Build the plugin
                 std::cout << "Building Python plugin..." << std::endl;
                 int build_result = std::system("cmake --build . --config Release");
@@ -586,7 +586,7 @@ namespace mcp {
                     std::cerr << "Error: Plugin build failed" << std::endl;
                     return;
                 }
-                
+
                 std::cout << "Python plugin built successfully!" << std::endl;
                 std::cout << "DLL file location: " << (build_dir / (plugin_id + ".dll")).string() << std::endl;
             } catch (const fs::filesystem_error &e) {

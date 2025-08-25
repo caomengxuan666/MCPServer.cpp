@@ -1,7 +1,7 @@
 #pragma once
 
-#include "protocol/json_rpc.h"
 #include "Prompts/prompt.h"
+#include "protocol/json_rpc.h"
 #include "tool_registry.h"
 #include "transport/session.h"
 #include <memory>
@@ -14,11 +14,11 @@ namespace mcp::routers {
      * @return Response with prompt content
      */
     inline protocol::Response handle_prompts_get(
-            const protocol::Request& req,
+            const protocol::Request &req,
             std::shared_ptr<business::ToolRegistry> /*registry*/,
             std::shared_ptr<transport::Session> /*session*/,
-            const std::string& /*session_id*/) {
-        
+            const std::string & /*session_id*/) {
+
         protocol::Response resp;
         resp.id = req.id.value_or(nullptr);
 
@@ -26,9 +26,8 @@ namespace mcp::routers {
         std::string name = req.params.value("name", "");
         if (name.empty()) {
             resp.error = protocol::Error{
-                protocol::error_code::INVALID_PARAMS,
-                "Missing 'name' parameter"
-            };
+                    protocol::error_code::INVALID_PARAMS,
+                    "Missing 'name' parameter"};
             return resp;
         }
 
@@ -46,7 +45,7 @@ namespace mcp::routers {
         content1["type"] = "text";
         content1["text"] = "analaze the given code:\n\n```python\ndef calculate_sum(numbers):\n    total = 0\n    for num in numbers:\n        total = total + num\n    return total\n\nresult = calculate_sum([1, 2, 3, 4, 5])\nprint(result)\n```";
         message1.content = content1;
-        
+
         content.messages.push_back(message1);
 
         // Build response
@@ -54,4 +53,4 @@ namespace mcp::routers {
         return resp;
     }
 
-} // namespace mcp::routers
+}// namespace mcp::routers

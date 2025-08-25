@@ -4,11 +4,11 @@
 #define _WIN32_WINNT 0x0601
 #endif
 
+#include "http_handler.h"
 #include "transport_types.h"
+#include <array>
 #include <asio.hpp>
 #include <memory>
-#include <array>
-#include "http_handler.h"
 
 namespace mcp::transport {
 
@@ -44,13 +44,13 @@ namespace mcp::transport {
         asio::io_context &get_io_context() { return io_context_; }
 
     protected:
-        BaseTransport(const std::string& address, unsigned short port);
+        BaseTransport(const std::string &address, unsigned short port);
 
-        asio::io_context io_context_;                                          ///< IO context for async operations
-        asio::ip::tcp::acceptor acceptor_;                                     ///< TCP acceptor for incoming connections
-        std::unique_ptr<HttpHandler> handler_;                                 ///< HTTP request handler
-        asio::executor_work_guard<asio::io_context::executor_type> work_guard_{asio::make_work_guard(io_context_)}; ///< Keep IO context running
-        std::array<char, 8192> buffer_;                                        ///< Shared buffer
+        asio::io_context io_context_;                                                                              ///< IO context for async operations
+        asio::ip::tcp::acceptor acceptor_;                                                                         ///< TCP acceptor for incoming connections
+        std::unique_ptr<HttpHandler> handler_;                                                                     ///< HTTP request handler
+        asio::executor_work_guard<asio::io_context::executor_type> work_guard_{asio::make_work_guard(io_context_)};///< Keep IO context running
+        std::array<char, 8192> buffer_;                                                                            ///< Shared buffer
     };
 
 }// namespace mcp::transport

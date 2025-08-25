@@ -112,8 +112,9 @@ public:
     std::string type() const override {
         std::string types;
         for (size_t i = 0; i < managers_.size(); ++i) {
-            if (i > 0) { types += "/";
-}
+            if (i > 0) {
+                types += "/";
+            }
             types += managers_[i]->type();
         }
         return types;

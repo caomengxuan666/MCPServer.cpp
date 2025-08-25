@@ -1,8 +1,8 @@
 #include "ssl_session.h"
 #include "core/logger.h"
 #include "http_handler.h"
-#include <asio/ssl/error.hpp>
 #include "utils/session_id.h"
+#include <asio/ssl/error.hpp>
 
 namespace mcp::transport {
     /**
@@ -122,7 +122,7 @@ namespace mcp::transport {
             while (ssl_stream_.lowest_layer().available(ec) > 0 && !ec) {
                 ssl_stream_.next_layer().read_some(asio::buffer(discard_buf), ec);
             }
-            
+
             // Check for errors after draining
             if (ec && ec != asio::error::would_block) {
                 MCP_WARN("Error draining socket buffer (session ID: {}): {}", session_id_, ec.message());
@@ -132,16 +132,16 @@ namespace mcp::transport {
 
             // Send encrypted message
             size_t total_bytes_written = 0;
-            const size_t max_chunk_size = 4096; // Limit chunk size to prevent buffer issues
-            
+            const size_t max_chunk_size = 4096;// Limit chunk size to prevent buffer issues
+
             // Send message in chunks if it's large
             while (total_bytes_written < message.size()) {
                 size_t chunk_size = std::min(max_chunk_size, message.size() - total_bytes_written);
                 std::string chunk = message.substr(total_bytes_written, chunk_size);
-                
+
                 //asio::error_code ec;
                 size_t bytes_written = co_await asio::async_write(ssl_stream_, asio::buffer(chunk), asio::redirect_error(asio::use_awaitable, ec));
-                
+
                 if (ec) {
                     if (!closed_) {
                         MCP_WARN("Failed to write to SSL socket (session ID: {}): {} ({})", session_id_, ec.message(), ec.value());
@@ -155,16 +155,16 @@ namespace mcp::transport {
                     close();
                     co_return;
                 }
-                
+
                 if (bytes_written != chunk_size) {
                     MCP_WARN("Incomplete write to SSL socket (session ID: {}): expected {}, wrote {}", session_id_, chunk_size, bytes_written);
                     close();
                     co_return;
                 }
-                
+
                 total_bytes_written += chunk_size;
             }
-            
+
             MCP_DEBUG("Successfully wrote {} bytes to SSL session (ID: {})", message.size(), session_id_);
         } catch (const std::exception &e) {
             if (!closed_) {
@@ -172,8 +172,8 @@ namespace mcp::transport {
                 if (openssl_err != 0) {
                     char err_buf[256];
                     ERR_error_string_n(openssl_err, err_buf, sizeof(err_buf));
-                    MCP_ERROR("Failed to write to SSL socket (session ID: {}): {} (OpenSSL error: {})", 
-                             session_id_, e.what(), err_buf);
+                    MCP_ERROR("Failed to write to SSL socket (session ID: {}): {} (OpenSSL error: {})",
+                              session_id_, e.what(), err_buf);
                 } else {
                     MCP_ERROR("Failed to write to SSL socket (session ID: {}): {}", session_id_, e.what());
                 }
@@ -197,16 +197,16 @@ namespace mcp::transport {
         try {
             // Send encrypted message without clearing the buffer to allow streaming
             size_t total_bytes_written = 0;
-            const size_t max_chunk_size = 4096; // Limit chunk size to prevent buffer issues
-            
+            const size_t max_chunk_size = 4096;// Limit chunk size to prevent buffer issues
+
             // Send message in chunks if it's large
             while (total_bytes_written < message.size()) {
                 size_t chunk_size = std::min(max_chunk_size, message.size() - total_bytes_written);
                 std::string chunk = message.substr(total_bytes_written, chunk_size);
-                
+
                 asio::error_code ec;
                 size_t bytes_written = co_await asio::async_write(ssl_stream_, asio::buffer(chunk), asio::redirect_error(asio::use_awaitable, ec));
-                
+
                 if (ec) {
                     if (!closed_) {
                         MCP_WARN("Failed to stream write to SSL socket (session ID: {}): {} ({})", session_id_, ec.message(), ec.value());
@@ -220,16 +220,16 @@ namespace mcp::transport {
                     close();
                     co_return;
                 }
-                
+
                 if (bytes_written != chunk_size) {
                     MCP_WARN("Incomplete stream write to SSL socket (session ID: {}): expected {}, wrote {}", session_id_, chunk_size, bytes_written);
                     close();
                     co_return;
                 }
-                
+
                 total_bytes_written += chunk_size;
             }
-            
+
             MCP_DEBUG("Successfully stream wrote {} bytes to SSL session (ID: {})", message.size(), session_id_);
         } catch (const std::exception &e) {
             if (!closed_) {
@@ -237,8 +237,8 @@ namespace mcp::transport {
                 if (openssl_err != 0) {
                     char err_buf[256];
                     ERR_error_string_n(openssl_err, err_buf, sizeof(err_buf));
-                    MCP_ERROR("Failed to stream write to SSL socket (session ID: {}): {} (OpenSSL error: {})", 
-                             session_id_, e.what(), err_buf);
+                    MCP_ERROR("Failed to stream write to SSL socket (session ID: {}): {} (OpenSSL error: {})",
+                              session_id_, e.what(), err_buf);
                 } else {
                     MCP_ERROR("Failed to stream write to SSL socket (session ID: {}): {}", session_id_, e.what());
                 }
@@ -262,21 +262,21 @@ namespace mcp::transport {
         MCP_DEBUG("Closing SSL session (ID: {})", session_id_);
 
         // 1. Shutdown SSL layer gracefully
-        (void)ssl_stream_.shutdown(ec);
+        (void) ssl_stream_.shutdown(ec);
         if (ec && ec != asio::error::not_connected && ec != asio::ssl::error::stream_truncated) {
             unsigned long openssl_err = ERR_get_error();
             if (openssl_err != 0) {
                 char err_buf[256];
                 ERR_error_string_n(openssl_err, err_buf, sizeof(err_buf));
-                MCP_DEBUG("SSL shutdown error (session ID: {}): {} (OpenSSL error: {})", 
-                        session_id_, ec.message(), err_buf);
+                MCP_DEBUG("SSL shutdown error (session ID: {}): {} (OpenSSL error: {})",
+                          session_id_, ec.message(), err_buf);
             } else {
                 MCP_DEBUG("SSL shutdown error (session ID: {}): {}", session_id_, ec.message());
             }
         }
 
         // 2. Cancel pending operations
-        (void)ssl_stream_.lowest_layer().cancel(ec);
+        (void) ssl_stream_.lowest_layer().cancel(ec);
         if (ec) {
             MCP_DEBUG("Socket cancel error (session ID: {}): {}", session_id_, ec.message());
         }
@@ -289,12 +289,12 @@ namespace mcp::transport {
         }
 
         // 4. Shutdown and close underlying socket
-        (void)ssl_stream_.lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+        (void) ssl_stream_.lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
         if (ec && ec != asio::error::not_connected) {
             MCP_DEBUG("Socket shutdown error (session ID: {}): {}", session_id_, ec.message());
         }
 
-        (void)ssl_stream_.lowest_layer().close(ec);
+        (void) ssl_stream_.lowest_layer().close(ec);
         if (ec) {
             MCP_DEBUG("Socket close error (session ID: {}): {}", session_id_, ec.message());
         }
