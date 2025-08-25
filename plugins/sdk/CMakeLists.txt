@@ -4,6 +4,7 @@ set(TARGET_NAME mcp_plugin_sdk)
 set(SDK_SOURCES
     tool_info_parser.cpp
     tool_info_parser.h
+    pybind_module_plugin.cpp
 )
 
 set(HEADERS
@@ -11,8 +12,11 @@ set(HEADERS
     tool_info_parser.h
 )
 
+
 add_library(${TARGET_NAME} ${SDK_SOURCES} ${HEADERS})
 
+include(${CMAKE_SOURCE_DIR}/cmake/EnablePython.cmake)
+target_enable_python(${TARGET_NAME})
 
 target_include_directories(${TARGET_NAME}
     PUBLIC
@@ -23,6 +27,7 @@ target_include_directories(${TARGET_NAME}
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/nlohmann>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/spdlog/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/pybind11/include>
 )
 
 target_compile_features(${TARGET_NAME} PRIVATE cxx_std_17)
@@ -32,6 +37,7 @@ target_link_libraries(${TARGET_NAME}
     PUBLIC
         mcp_core
         mcp_protocol
+        mcp_business
 )
 
 target_compile_definitions(${TARGET_NAME} PUBLIC MCPSERVER_API_EXPORTS)

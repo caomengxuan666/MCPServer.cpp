@@ -28,6 +28,12 @@ typedef ToolInfo *(*get_tools_func)(int *count);
 // Function pointer to free result
 typedef void (*free_result_func)(const char *);
 
+// Function pointer to initialize python plugin
+typedef bool (*initialize_plugin_func)(const char *plugin_path);
+
+// Function pointer to uninitialize python plugin
+typedef void (*uninitialize_plugin_func)(const char *plugin_path);
+
 // streaming support
 typedef void *StreamGenerator;
 

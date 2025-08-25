@@ -42,7 +42,13 @@ namespace mcp::business {
         auto get_tools = (get_tools_func) GET_FUNC(handle, "get_tools");
         auto call_tool = (call_tool_func) GET_FUNC(handle, "call_tool");
         auto free_result = (free_result_func) GET_FUNC(handle, "free_result");
-
+        auto initialize_plugin = (initialize_plugin_func) GET_FUNC(handle, "initialize_plugin");
+        auto uninitialize_plugin = (uninitialize_plugin_func) GET_FUNC(handle, "uninitialize_plugin");
+        if (!initialize_plugin) {
+            MCP_TRACE("Plugin is not a python plugin: {}", plugin_file_path);
+        } else {
+            MCP_TRACE("Plugin is a python plugin: {}", plugin_file_path);
+        }
         // Load stream functions if available
         auto get_stream_next_loader = (get_stream_next_func) GET_FUNC(handle, "get_stream_next");
         auto get_stream_free_loader = (get_stream_free_func) GET_FUNC(handle, "get_stream_free");
@@ -55,6 +61,21 @@ namespace mcp::business {
             return false;
         }
 
+        // Initialize plugin if it has initialize_plugin function
+        if (initialize_plugin) {
+            MCP_DEBUG("Initializing plugin: {}", plugin_file_path);
+            MCP_DEBUG("initialize_plugin function pointer: {}", (void*)initialize_plugin);
+            bool init_result = initialize_plugin(plugin_file_path.c_str());
+            MCP_DEBUG("initialize_plugin returned: {}", init_result);
+            if (!init_result) {
+                MCP_ERROR("Failed to initialize plugin: {}", plugin_file_path);
+                CLOSE_LIB(handle);
+                return false;
+            }
+        } else {
+            MCP_DEBUG("Plugin does not have initialize_plugin function: {}", plugin_file_path);
+        }
+
         // Loading tools from the plugin
         int tool_count = 0;
         ToolInfo *tool_infos = get_tools(&tool_count);
@@ -62,12 +83,14 @@ namespace mcp::business {
             MCP_WARN("Plugin has no tools: {}", plugin_file_path);
         }
 
-        // Store the plugins
+        // Create plugin object
         auto plugin = std::make_unique<Plugin>();
         plugin->handle = handle;
         plugin->get_tools = get_tools;
         plugin->call_tool = call_tool;
         plugin->free_result = free_result;
+        plugin->initialize_plugin = initialize_plugin;
+        plugin->uninitialize_plugin = uninitialize_plugin;
         plugin->get_stream_next = get_stream_next_loader;
         plugin->get_stream_free = get_stream_free_loader;
         for (int i = 0; i < tool_count; ++i) {
@@ -410,6 +433,11 @@ namespace mcp::business {
         }
 
         lib_handle handle = it->second->handle;
+
+        if (it->second->uninitialize_plugin) {
+            MCP_DEBUG("Uninitializing plugin: {}", plugin_name);
+            it->second->uninitialize_plugin(plugin_name.c_str());
+        }
 
         if (handle) {
             CLOSE_LIB(handle);

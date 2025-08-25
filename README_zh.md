@@ -180,6 +180,30 @@ MCPServer.cpp 支持强大的插件系统，允许在不修改核心服务器的
 - `safe_system_plugin`: 安全系统命令执行
 - `example_stream_plugin`: 流式数据示例
 
+### Python 插件
+
+MCPServer++ 现在通过新的 Python SDK 支持 Python 插件，这使得插件开发更加直观。Python 插件被编译为动态库 (DLL/SO)，使用 pybind11 包装 Python 代码。
+
+#### 创建 Python 插件
+
+要创建新的 Python 插件，请使用 [plugin_ctl](file:///D:/codespace/MCPServer++/tools/plugin_ctl.cpp#L759-L759) 工具：
+
+```bash
+./plugin_ctl create -p my_python_plugin
+```
+
+这将生成一个使用新的 Python SDK 的 Python 插件模板，其中包含装饰器和辅助函数。
+
+#### Python 插件特性
+
+- 基于装饰器的工具定义，使用 [@tool](file://d:\codespace\MCPServer++\plugins\sdk\mcp_sdk.py#L173-L186)
+- 自动 JSON 处理
+- 流式工具支持
+- 参数验证辅助函数
+- 与 MCP 协议的轻松集成
+
+有关 Python 插件开发的详细信息，请参阅 [Python 插件文档](docs/PYTHON_PLUGINS_zh.md)。
+
 ### 插件开发
 
 有关开发自定义插件的详细信息，请参阅 [plugins/README_zh.md](plugins/README_zh.md)。

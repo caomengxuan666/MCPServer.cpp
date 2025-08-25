@@ -1,5 +1,5 @@
 # src/business/CMakeLists.txt
-file(GLOB BUSINESS_SOURCES *.cpp)
+file(GLOB BUSINESS_SOURCES *.cpp *.h)
 
 add_library(mcp_business ${BUSINESS_SOURCES})
 
@@ -7,6 +7,7 @@ target_include_directories(mcp_business PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/mcp/business>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/pybind11/include>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/nlohmann>
 )
 
@@ -23,6 +24,9 @@ endif()
 target_link_libraries(mcp_business PUBLIC
     mcp_transport
 )
+
+include(${CMAKE_SOURCE_DIR}/cmake/EnablePython.cmake)
+target_enable_python(mcp_transport)
 
 # Conditionally install the library and headers
 if(CPACK_INCLUDE_LIBS)
