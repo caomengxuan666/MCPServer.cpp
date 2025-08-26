@@ -26,6 +26,8 @@
 namespace py = pybind11;
 namespace fs = std::filesystem;
 
+using namespace mcp::business;
+
 
 static std::unordered_map<std::string, std::unique_ptr<PythonPluginInstance>> g_plugin_instances;
 

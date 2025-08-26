@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.6.0)
+project(MCPServer.cpp LANGUAGES CXX C VERSION 1.0.7.0)
 
 # Add option for Python support
 option(ENABLE_PYTHON_PLUGINS "Enable Python plugin support" ON)

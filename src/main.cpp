@@ -1,4 +1,5 @@
 #include "Auth/AuthManager.hpp"
+#include "business/python_runtime_manager.h"
 #include "config/config.hpp"// Configuration management using INI file
 #include "core/logger.h"
 #include "core/server.h"
@@ -36,25 +37,30 @@ int main() {
                 config.server.log_level,
                 config.server.max_file_size,
                 config.server.max_files);
+        MCP_INFO("Starting MCP Server with configuration: {}", mcp::config::get_config_file_path());
 
-        // Step 3a: Enable file sink for logging
-        mcp::core::MCPLogger::enable_file_sink();
-
+        // Print configuration
+        MCP_INFO("Server Configuration:");
+        MCP_INFO("  IP: {}", config.server.ip);
+        MCP_INFO("  Port: {}", config.server.port);
+        MCP_INFO("  HTTP Port: {}", config.server.http_port);
+        MCP_INFO("  HTTPS Port: {}", config.server.https_port);
+        MCP_INFO("  Plugin Directory: {}", config.server.plugin_dir);
+        MCP_INFO("  Log Level: {}", config.server.log_level);
+        MCP_INFO("  Log Path: {}", config.server.log_path);
         auto address = config.server.ip;
 
+        // Initialize Python environment configuration
 
-        // Set the log message format pattern. Use default if not specified in config.
-        const std::string logPattern = config.server.log_pattern.empty()
-                                               ? "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
-                                               : config.server.log_pattern;
-
-        mcp::core::MCPLogger::instance()->set_pattern(logPattern);
-
-        // Log that the application has started successfully.
-        MCP_INFO("MCPServer.cpp started with configuration from '{}'", mcp::config::get_config_file_path());
-
-        // Step 4: Output all configuration values to the debug log for inspection.
-        mcp::config::print_config(config);
+        auto &python_runtime_manager = mcp::business::PythonRuntimeManager::getInstance();
+        auto python_env_config = mcp::business::PythonRuntimeManager::createEnvironmentConfig(
+                config.python_env.default_env,
+                config.python_env.uv_venv_path);
+        python_runtime_manager.setEnvironmentConfig(std::move(python_env_config));
+        MCP_INFO("Python Environment Configuration:");
+        MCP_INFO("  Default Environment: {}", config.python_env.default_env);
+        MCP_INFO("  Conda Prefix: {}", config.python_env.conda_prefix);
+        MCP_INFO("  UV Venv Path: {}", config.python_env.uv_venv_path);
 
         // Step 5: Initialize the metrics manager.
         // You can set a metrics callback here
@@ -169,8 +175,8 @@ int main() {
         return 0;// Normal exit
 
     } catch (const std::exception &e) {
-        // Log any critical error that caused the server to fail at startup.
-        MCP_CRITICAL("Critical error during startup: {}", e.what());
-        return 1;// Indicate failure
+        std::cerr << "Error: " << e.what() << std::endl;
+        MCP_ERROR("Server error: {}", e.what());
+        return -1;
     }
 }

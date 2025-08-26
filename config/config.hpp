@@ -37,6 +37,11 @@ namespace mcp {
             return get_config_file_path();
         }
 
+        enum class ConfigMode{
+            NONE,   //Do not load config,use default settings
+            STATIC, //Load config from static file
+            DYNAMIC //Load config dynamically
+        };
 
         /**
          * Server-specific configuration structure
@@ -163,6 +168,42 @@ namespace mcp {
             }
         };
 
+
+        /**
+         * Python environment configuration structure
+         * Contains settings for Python interpreter environment selection
+         */
+        struct PythonEnvConfig {
+            std::string default_env; // Default Python environment type (system, conda, uv)
+            std::string conda_prefix;// Conda environment installation prefix
+            std::string uv_venv_path;// UV virtual environment path
+
+            /**
+             * Load Python environment configuration from INI file
+             * @param ini Reference to IniManager instance
+             * @return Populated PythonEnvConfig structure
+             */
+            static PythonEnvConfig load(inicpp::IniManager &ini) {
+                try {
+                    PythonEnvConfig config;
+
+                    // Get python_environment section, create if not exists
+                    auto python_section = ini["python_environment"];
+
+                    // Load configuration values with defaults
+                    config.default_env = python_section["default"].String().empty() ? "system" : python_section["default"].String();
+                    config.conda_prefix = python_section["conda_prefix"].String().empty() ? "/opt/conda" : python_section["conda_prefix"].String();
+                    config.uv_venv_path = python_section["uv_venv_path"].String().empty() ? "./venv" : python_section["uv_venv_path"].String();
+
+                    return config;
+                } catch (const std::exception &e) {
+                    MCP_ERROR("Failed to load Python environment config: {}", e.what());
+                    std::cerr << "Failed to load Python environment config: " << e.what() << std::endl;
+                    throw;
+                }
+            }
+        };
+
         /**
          * Global application configuration structure
          * Contains top-level configuration and nested server settings
@@ -171,6 +212,7 @@ namespace mcp {
             std::string title;         // Configuration file title/description
             ServerConfig server;       // Nested server configuration
             PluginHubConfig plugin_hub;// Nested plugin hub configuration
+            PythonEnvConfig python_env;// Nested Python environment configuration
 
             /**
              * Loads complete configuration from INI file
@@ -185,6 +227,7 @@ namespace mcp {
                     config.title = ini[""]["title"].String().empty() ? "MCP Server Configuration" : ini[""]["title"].String();
                     config.server = ServerConfig::load(ini);
                     config.plugin_hub = PluginHubConfig::load(ini);
+                    config.python_env = PythonEnvConfig::load(ini);
 
                     return config;
                 } catch (const std::exception &e) {

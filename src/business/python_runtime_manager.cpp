@@ -3,6 +3,11 @@
 #include <iostream>
 #include <sstream>
 
+// Include Python.h after pybind11 headers to avoid conflicts
+#include <Python.h>
+
+namespace mcp::business {
+
 PythonRuntimeManager &PythonRuntimeManager::getInstance() {
     static PythonRuntimeManager instance;
     return instance;
@@ -18,7 +23,7 @@ PythonRuntimeManager::~PythonRuntimeManager() {
 
     std::ostringstream oss;
     oss << std::this_thread::get_id();
-    MCP_DEBUG("[PYTHON] Finalizing Python runtime (thread: {})", oss.str());
+    MCP_DEBUG("[PYTHON] Finalizing Python interpreter (thread: {})", oss.str());
 
     // 1. Restore main thread state (must be done before Py_Finalize())
     if (main_thread_state_ != nullptr) {
@@ -37,6 +42,23 @@ PythonRuntimeManager::~PythonRuntimeManager() {
     MCP_DEBUG("[PYTHON] Runtime finalized");
 }
 
+void PythonRuntimeManager::setEnvironmentConfig(std::unique_ptr<PythonEnvironmentConfig> config) {
+    std::lock_guard<std::mutex> lock(runtime_mutex_);
+    env_config_ = std::move(config);
+}
+
+std::unique_ptr<PythonEnvironmentConfig> PythonRuntimeManager::createEnvironmentConfig(const std::string& type, const std::string& uv_venv_path) {
+    if (type == "system") {
+        return std::make_unique<SystemEnvConfig>();
+    } else if (type == "conda") {
+        return std::make_unique<CondaEnvConfig>();
+    } else if (type == "uv") {
+        return std::make_unique<UvEnvConfig>(uv_venv_path);
+    }
+    // Default to system environment
+    return std::make_unique<SystemEnvConfig>();
+}
+
 bool PythonRuntimeManager::initialize(const std::string &plugin_dir) {
     std::lock_guard<std::mutex> lock(runtime_mutex_);
     if (initialized_) {
@@ -50,9 +72,32 @@ bool PythonRuntimeManager::initialize(const std::string &plugin_dir) {
         std::ostringstream oss;
         oss << std::this_thread::get_id();
         MCP_DEBUG("[PYTHON] Initializing Python interpreter (thread: {})", oss.str());
-
-        // 1. Initialize Python interpreter (void type, no need to check return value)
-        Py_Initialize();
+        
+        // Set Python home and path if environment config is provided
+        if (env_config_) {
+            std::string python_home = env_config_->get_python_interpreter_path();
+            if (!python_home.empty()) {
+                // Use PyConfig for Python 3.8+ (more modern approach)
+                // This is a safer way to set Python home
+                #if PY_VERSION_HEX >= 0x03080000
+                PyConfig config;
+                PyConfig_InitPythonConfig(&config);
+                PyConfig_SetString(&config, &config.home, Py_DecodeLocale(python_home.c_str(), nullptr));
+                Py_InitializeFromConfig(&config);
+                PyConfig_Clear(&config);
+                #else
+                Py_SetPythonHome(Py_DecodeLocale(python_home.c_str(), nullptr));
+                #endif
+                MCP_DEBUG("[PYTHON] Set Python home to: {}", python_home);
+            } else {
+                // Initialize Python interpreter (void type, no need to check return value)
+                Py_Initialize();
+            }
+        } else {
+            // Initialize Python interpreter (void type, no need to check return value)
+            Py_Initialize();
+        }
+        
         MCP_DEBUG("[PYTHON] Py_Initialize() called (interpreter initialized)");
 
         // 2. Enable multi-threading support (Python 3.9+ compatible, alternative to PyEval_InitThreads())
@@ -75,6 +120,15 @@ bool PythonRuntimeManager::initialize(const std::string &plugin_dir) {
         py::module_ sys = py::module_::import("sys");
         sys.attr("path").attr("append")(plugin_dir);
         MCP_DEBUG("[PYTHON] Added plugin dir to sys.path: {}", plugin_dir);
+
+        // Add additional paths from environment config if provided
+        if (env_config_) {
+            std::string python_path = env_config_->get_python_path();
+            if (!python_path.empty()) {
+                sys.attr("path").attr("append")(python_path);
+                MCP_DEBUG("[PYTHON] Added Python path to sys.path: {}", python_path);
+            }
+        }
 
         // Fix: Convert py::str to std::string before output
         std::string sys_path_str = py::str(sys.attr("path")).cast<std::string>();
@@ -124,3 +178,5 @@ void PythonRuntimeManager::addPath(const std::string &path) {
     py::module_ sys = py::module_::import("sys");
     sys.attr("path").attr("append")(path);
 }
+
+} // namespace mcp::business

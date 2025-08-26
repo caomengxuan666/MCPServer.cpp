@@ -214,7 +214,7 @@ MCPServer++ 现在通过新的 Python SDK 支持 Python 插件，这使得插件
 
 ### 请求示例
 
-``json
+```json
 {
   "jsonrpc": "2.0",
   "id": 1,
@@ -225,7 +225,7 @@ MCPServer++ 现在通过新的 Python SDK 支持 Python 插件，这使得插件
 
 ### 响应示例
 
-``json
+```json
 {
   "jsonrpc": "2.0",
   "id": 1,
