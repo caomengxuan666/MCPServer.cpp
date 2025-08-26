@@ -70,13 +70,13 @@ jobs:
         if: matrix.is_windows
         shell: cmd
         run: |
-          cmake --build build --config ${{ matrix.build_type }} --parallel
+          cmake --build build --config ${{ matrix.build_type }} --parallel 4
 
       - name: Build (Linux)
         if: matrix.is_windows == false
         shell: bash
         run: |
-          cmake --build build --config ${{ matrix.build_type }} --parallel
+          cmake --build build --config ${{ matrix.build_type }} --parallel 4
 
       - name: Test (Windows)
         if: matrix.is_windows

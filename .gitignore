@@ -13,3 +13,5 @@ checks.json
 /certs
 *.exe
 checks.json
+*.pyc
+__pycache__/
