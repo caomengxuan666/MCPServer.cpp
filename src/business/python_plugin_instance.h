@@ -37,7 +37,7 @@ namespace mcp::business {
          * @return True if virtual environment is enabled, false otherwise
          */
         virtual bool use_virtual_env() const = 0;
-        
+
     protected:
         /**
          * Detect Python version by trying common versions from 3.6 to 3.13
@@ -46,23 +46,22 @@ namespace mcp::business {
         std::string detect_python_version() const {
             // Try common Python versions from 3.13 down to 3.6
             static const std::vector<std::string> versions = {
-                "3.13", "3.12", "3.11", "3.10", "3.9", "3.8", "3.7", "3.6"
-            };
-            
+                    "3.13", "3.12", "3.11", "3.10", "3.9", "3.8", "3.7", "3.6"};
+
             // In a real implementation, we would detect the actual Python version
             // For now, we default to "3.9" as a reasonable fallback
             // A more sophisticated implementation might check the filesystem or use Python API
             return "3.9";
         }
-        
+
 #ifdef _MSC_VER
         /**
          * Secure way to get environment variable on Windows
          * @param name Environment variable name
          * @return Environment variable value or empty string if not found
          */
-        std::string get_env_var(const char* name) const {
-            char* value = nullptr;
+        std::string get_env_var(const char *name) const {
+            char *value = nullptr;
             size_t len = 0;
             if (_dupenv_s(&value, &len, name) == 0 && value != nullptr) {
                 std::string result(value);
@@ -77,7 +76,7 @@ namespace mcp::business {
          * @param name Environment variable name
          * @return Environment variable value or nullptr if not found
          */
-        const char* get_env_var(const char* name) const {
+        const char *get_env_var(const char *name) const {
             return std::getenv(name);
         }
 #endif
@@ -95,7 +94,7 @@ namespace mcp::business {
             // Usually Python is in the PATH, so we can just use "python"
             return "python";
 #else
-            return "/usr/bin/python3";  // Default system Python path
+            return "/usr/bin/python3";// Default system Python path
 #endif
         }
 
@@ -103,9 +102,9 @@ namespace mcp::business {
 #ifdef _MSC_VER
             // On Windows, Python packages are typically available in the PATH
             // or can be found relative to the Python executable
-            return "";  // Empty string means use default Python path
+            return "";// Empty string means use default Python path
 #else
-            return "/usr/lib/python3/dist-packages";  // System Python packages path
+            return "/usr/lib/python3/dist-packages";// System Python packages path
 #endif
         }
 
@@ -141,7 +140,7 @@ namespace mcp::business {
      */
     class UvEnvConfig : public PythonEnvironmentConfig {
     public:
-        explicit UvEnvConfig(const std::string& venv_path) : venv_path_(venv_path) {}
+        explicit UvEnvConfig(const std::string &venv_path) : venv_path_(venv_path) {}
 
         std::string get_python_interpreter_path() const override {
             return venv_path_ + "/bin/python";
@@ -181,6 +180,6 @@ namespace mcp::business {
         std::mutex cache_mutex_;
     };
 
-} // namespace mcp::business
+}// namespace mcp::business
 
 #endif// PYTHON_PLUGIN_INSTANCE_H
