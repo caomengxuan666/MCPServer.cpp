@@ -119,7 +119,11 @@ def main():
     default_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) if len(sys.argv) <= 1 else sys.argv[1]
     root_dir = sys.argv[1] if len(sys.argv) > 1 else default_root
     suffixes = os.environ.get('SUFFIXES', '.h .cc .cpp .hpp .cxx .hxx .C').split()
-    parallel_jobs = int(os.environ.get('PARALLEL_JOBS', multiprocessing.cpu_count()))
+    
+    # Limit parallel jobs to avoid Windows multiprocessing limitations
+    # Windows has a limit of 63 handles in WaitForMultipleObjects
+    max_parallel_jobs = 60
+    parallel_jobs = min(int(os.environ.get('PARALLEL_JOBS', multiprocessing.cpu_count())), max_parallel_jobs)
     
     # Check for clang-format
     clang_format = find_clang_format()

@@ -1,6 +1,7 @@
 #include "Auth/AuthManager.hpp"
 #include "business/python_runtime_manager.h"
 #include "config/config.hpp"// Configuration management using INI file
+#include "config/config_observer.hpp"
 #include "core/logger.h"
 #include "core/server.h"
 #include "metrics/metrics_manager.h"
@@ -11,8 +12,8 @@
 #include <asio/signal_set.hpp>
 #include <csignal>
 #include <cstdlib>
+#include <iostream>
 #include <thread>
-
 
 /**
  * Entry point of the MCP server application.
@@ -25,10 +26,10 @@ int main() {
     try {
         // Step 1: Ensure the default configuration file exists.
         // If the config file is missing or empty, create one with safe defaults.
-        mcp::config::initialize_default_config();
+        mcp::config::initialize_config_system(mcp::config::ConfigMode::DYNAMIC);
 
         // Step 2: Load the full configuration from the INI file.
-        auto config = mcp::config::GlobalConfig::load();
+        auto config = mcp::config::get_current_config();
 
         // Step 3: Initialize the asynchronous logger using settings from the config.
         // Parameters include log file path, log level, maximum file size, and number of rotation files.
@@ -50,17 +51,22 @@ int main() {
         MCP_INFO("  Log Path: {}", config.server.log_path);
         auto address = config.server.ip;
 
-        // Initialize Python environment configuration
-
+        // Step 4: Set up PythonRuntimeManager with initial config and observer
         auto &python_runtime_manager = mcp::business::PythonRuntimeManager::getInstance();
         auto python_env_config = mcp::business::PythonRuntimeManager::createEnvironmentConfig(
                 config.python_env.default_env,
                 config.python_env.uv_venv_path);
         python_runtime_manager.setEnvironmentConfig(std::move(python_env_config));
-        MCP_INFO("Python Environment Configuration:");
-        MCP_INFO("  Default Environment: {}", config.python_env.default_env);
-        MCP_INFO("  Conda Prefix: {}", config.python_env.conda_prefix);
-        MCP_INFO("  UV Venv Path: {}", config.python_env.uv_venv_path);
+
+        MCP_INFO("Python Environment Initialized:");
+        MCP_INFO("  Default: {}", config.python_env.default_env);
+        MCP_INFO("  UV Venv: {}", config.python_env.uv_venv_path);
+
+        auto python_observer = std::make_unique<mcp::business::PythonConfigObserver>(python_runtime_manager);
+
+        // Register observer — now it will be notified on every config reload
+        mcp::config::g_config_loader->addObserver(python_observer.get());
+
 
         // Step 5: Initialize the metrics manager.
         // You can set a metrics callback here
